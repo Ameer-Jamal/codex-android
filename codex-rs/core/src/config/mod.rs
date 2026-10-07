@@ -119,6 +119,7 @@ use codex_protocol::models::ProfileWorkspaceRoot;
 use codex_protocol::models::SandboxEnforcement;
 use codex_protocol::openai_models::ModelsResponse;
 use codex_protocol::openai_models::ReasoningEffort;
+use codex_protocol::openai_models::validate_model_messages;
 use codex_protocol::permissions::DenyReadValidator;
 use codex_protocol::permissions::DenyReadViolation;
 use codex_protocol::permissions::FileSystemPath;
@@ -2159,6 +2160,17 @@ fn load_catalog_json(path: &AbsolutePathBuf) -> std::io::Result<ModelsResponse> 
                 path.display()
             ),
         ));
+    }
+    for model in &catalog.models {
+        validate_model_messages(model).map_err(|err| {
+            std::io::Error::new(
+                ErrorKind::InvalidData,
+                format!(
+                    "invalid model_catalog_json path `{}`: {err}",
+                    path.display()
+                ),
+            )
+        })?;
     }
     Ok(catalog)
 }

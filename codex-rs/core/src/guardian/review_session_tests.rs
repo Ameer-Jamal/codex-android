@@ -225,7 +225,11 @@ async fn test_review_params() -> GuardianReviewSessionParams {
         parent_session: Arc::new(session),
         parent_context: GuardianReviewContext::from(Arc::new(turn)),
         spawn_config,
-        node_repl_policy: GuardianNodeReplPolicy::from_messages(ResolvedModelMessages::bundled()),
+        node_repl_policy: GuardianNodeReplPolicy::from_messages(
+            &model,
+            ResolvedModelMessages::bundled(),
+        )
+        .expect("bundled node REPL policy"),
         category: GuardianScope::Shell,
         request: GuardianApprovalRequest::ExecCommand {
             id: "shell-1".to_string(),
@@ -413,14 +417,20 @@ async fn guardian_review_session_config_change_invalidates_cached_session() {
         .expect("catalog model messages"),
     );
     assert_ne!(
-        cached_reuse_key
-            .clone()
-            .with_node_repl_policy(&GuardianNodeReplPolicy::from_messages(
-                ResolvedModelMessages::bundled()
-            ),),
-        cached_reuse_key.with_node_repl_policy(&GuardianNodeReplPolicy::from_messages(
-            ResolvedModelMessages::from_model(&model)
-        ),),
+        cached_reuse_key.clone().with_node_repl_policy(
+            &GuardianNodeReplPolicy::from_messages(
+                "active-model",
+                ResolvedModelMessages::bundled(),
+            )
+            .expect("bundled node REPL policy"),
+        ),
+        cached_reuse_key.with_node_repl_policy(
+            &GuardianNodeReplPolicy::from_messages(
+                "active-model",
+                ResolvedModelMessages::from_model(&model),
+            )
+            .expect("catalog node REPL policy"),
+        ),
         "changing the effective Node REPL policy must invalidate reviewer history"
     );
 

@@ -121,3 +121,45 @@ async fn open_read_write_pool_preserves_wal_conversion_lock_error() -> anyhow::R
         .await;
     Ok(())
 }
+
+#[tokio::test]
+async fn rollback_journal_preserves_committed_data_and_rolls_back_uncommitted_writes()
+-> anyhow::Result<()> {
+    let home = crate::runtime::test_support::unique_temp_dir();
+    tokio::fs::create_dir_all(&home).await?;
+    let _cleanup = scopeguard::guard(home.clone(), |home| {
+        let _ = std::fs::remove_dir_all(home);
+    });
+    let sqlite = SqliteConfig::new_for_testing(home.as_path().abs());
+    let path = sqlite.logs_db_path();
+    let pool = sqlite
+        .open_read_write_pool_with_journal(&path, super::WritableJournalMode::Rollback)
+        .await?;
+    sqlx::query("CREATE TABLE android_journal_test (value TEXT NOT NULL)")
+        .execute(&pool)
+        .await?;
+    sqlx::query("INSERT INTO android_journal_test VALUES ('committed')")
+        .execute(&pool)
+        .await?;
+    let mut transaction = pool.begin().await?;
+    sqlx::query("INSERT INTO android_journal_test VALUES ('rolled back')")
+        .execute(&mut *transaction)
+        .await?;
+    transaction.rollback().await?;
+    pool.close().await;
+    let pool = sqlite
+        .open_read_write_pool_with_journal(&path, super::WritableJournalMode::Rollback)
+        .await?;
+    let journal: String = sqlx::query_scalar("PRAGMA journal_mode")
+        .fetch_one(&pool)
+        .await?;
+    let values: Vec<String> = sqlx::query_scalar("SELECT value FROM android_journal_test")
+        .fetch_all(&pool)
+        .await?;
+    assert_eq!(
+        (journal, values),
+        ("delete".to_string(), vec!["committed".to_string()])
+    );
+    pool.close().await;
+    Ok(())
+}

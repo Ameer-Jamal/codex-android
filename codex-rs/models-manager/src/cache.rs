@@ -1,6 +1,7 @@
 use chrono::DateTime;
 use chrono::Utc;
 use codex_protocol::openai_models::ModelInfo;
+use codex_protocol::openai_models::partition_model_infos;
 use serde::Deserialize;
 use serde::Serialize;
 use std::fmt;
@@ -12,6 +13,7 @@ use std::pin::Pin;
 use std::time::Duration;
 use tokio::fs;
 use tracing::info;
+use tracing::warn;
 
 /// Asynchronous storage for model catalog snapshots used by the models manager.
 ///
@@ -229,9 +231,23 @@ async fn load_fresh_file(
 async fn load_file(cache_path: &PathBuf) -> io::Result<Option<ModelsCacheEntry>> {
     match fs::read(cache_path).await {
         Ok(contents) => {
-            let cache = serde_json::from_slice(&contents)
+            let cache: ModelsCacheEntry = serde_json::from_slice(&contents)
                 .map_err(|err| io::Error::new(ErrorKind::InvalidData, err.to_string()))?;
-            Ok(Some(cache))
+            // Stessa regola della risposta remota: una voce fuori misura esce, le
+            // altre si caricano. Prima una sola voce rendeva illeggibile l'intera
+            // cache, che e' il ripiego di quando la rete non risponde — cioe' il
+            // caso in cui serve di piu'.
+            let (models, invalid) = partition_model_infos(cache.models);
+            for error in &invalid {
+                warn!("discarding cached model with an oversized message: {error}");
+            }
+            if models.is_empty() && !invalid.is_empty() {
+                return Err(io::Error::new(
+                    ErrorKind::InvalidData,
+                    format!("invalid model cache model message: {}", invalid[0]),
+                ));
+            }
+            Ok(Some(ModelsCacheEntry { models, ..cache }))
         }
         Err(err) if err.kind() == ErrorKind::NotFound => Ok(None),
         Err(err) => Err(err),
@@ -248,4 +264,107 @@ async fn save_file(cache_path: &PathBuf, cache: &ModelsCacheEntry) -> Result<(),
 
 fn cache_error(error: impl fmt::Display) -> ModelsCacheError {
     ModelsCacheError::new(error.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+    use tempfile::tempdir;
+
+    fn model_json_with_slug_and_instructions(slug: &str, len: usize) -> serde_json::Value {
+        let mut value = model_json_with_persistent_instructions(len);
+        value["slug"] = json!(slug);
+        value["display_name"] = json!(slug);
+        value
+    }
+
+    fn model_json_with_persistent_instructions(len: usize) -> serde_json::Value {
+        json!({
+            "slug": "cache-test-model",
+            "display_name": "Cache Test Model",
+            "description": "cache fixture",
+            "default_reasoning_level": "medium",
+            "supported_reasoning_levels": [{"effort": "medium", "description": "medium"}],
+            "shell_type": "shell_command",
+            "visibility": "list",
+            "supported_in_api": true,
+            "priority": 1,
+            "upgrade": null,
+            "support_verbosity": false,
+            "default_verbosity": null,
+            "apply_patch_tool_type": null,
+            "truncation_policy": {"mode": "bytes", "limit": 10_000},
+            "supports_image_detail_original": false,
+            "context_window": 272_000,
+            "experimental_supported_tools": [],
+            "base_instructions": "template",
+            "model_messages": {
+                "instructions_template": "template",
+                "persistent_instructions": "x".repeat(len)
+            }
+        })
+    }
+
+    #[tokio::test]
+    async fn file_cache_loader_keeps_the_valid_models_when_one_is_oversized() {
+        // The cache is the fallback when the network does not answer: one
+        // oversized entry must not make the whole file unreadable, or the
+        // fallback does not exist at the moment it is needed.
+        let dir = tempdir().expect("cache tempdir");
+        let path = dir.path().join("models.json");
+        let payload = json!({
+            "fetched_at": Utc::now(),
+            "client_version": "0.153.3",
+            "models": [
+                model_json_with_slug_and_instructions("cache-ok-1", 0),
+                model_json_with_slug_and_instructions("cache-too-long", 8 * 1024 + 1),
+                model_json_with_slug_and_instructions("cache-ok-2", 8 * 1024),
+            ]
+        });
+        fs::write(
+            &path,
+            serde_json::to_vec(&payload).expect("serialize cache fixture"),
+        )
+        .await
+        .expect("write cache fixture");
+
+        let loaded = load_fresh_file(&path, Duration::from_secs(60), "0.153.3")
+            .await
+            .expect("one oversized cached model must not fail the whole cache")
+            .expect("fresh cache is served");
+        assert_eq!(loaded.models.len(), 2, "the two valid models are loaded");
+        assert!(
+            loaded
+                .models
+                .iter()
+                .all(|model| model.slug != "cache-too-long")
+        );
+    }
+
+    #[tokio::test]
+    async fn file_cache_loader_still_fails_when_every_cached_model_is_oversized() {
+        let dir = tempdir().expect("cache tempdir");
+        let path = dir.path().join("models.json");
+        let payload = json!({
+            "fetched_at": Utc::now(),
+            "client_version": "0.153.3",
+            "models": [model_json_with_persistent_instructions(8 * 1024 + 1)]
+        });
+        fs::write(
+            &path,
+            serde_json::to_vec(&payload).expect("serialize cache fixture"),
+        )
+        .await
+        .expect("write cache fixture");
+
+        let error = load_fresh_file(&path, Duration::from_secs(60), "0.153.3")
+            .await
+            .expect_err("a cache with no valid model is still an error");
+        let message = error.to_string();
+        assert!(message.contains("invalid model cache model message"));
+        assert!(message.contains("persistent_instructions"));
+        assert!(message.contains("8193"));
+        assert!(message.contains("8192"));
+    }
 }

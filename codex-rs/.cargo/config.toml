@@ -9,3 +9,9 @@ rustflags = ["-C", "link-arg=/STACK:8388608", "-C", "link-arg=/arm64hazardfree"]
 
 [target.'cfg(all(windows, target_env = "gnu"))']
 rustflags = ["-C", "link-arg=-Wl,--stack,8388608"]
+
+# Cross-build configuration for Android NDK r28c, API 29 (Android 10).
+[target.aarch64-linux-android]
+ar = "llvm-ar"
+linker = "aarch64-linux-android29-clang"
+rustflags = ["-C", "link-arg=-lc++_shared", "-C", "link-arg=-Wl,-rpath,$ORIGIN"]

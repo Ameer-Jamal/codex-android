@@ -26,6 +26,10 @@ pub struct InstallRequest {
 
 /// Prepare a missing package while the caller holds the daemon operation lock.
 pub(super) async fn prepare(daemon: &Daemon, settings: &DaemonSettings) -> Result<()> {
+    // Android uses the installed binary; desktop installers cannot stage an NDK build.
+    if cfg!(target_os = "android") {
+        return daemon.ensure_managed_codex_bin();
+    }
     let source = InstallContext::current().package_layout.as_ref();
     // Keep package replacement state out of the CLI dispatcher's async stack frame.
     Box::pin(prepare_from_package(

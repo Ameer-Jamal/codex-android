@@ -1,9 +1,9 @@
 //! Native process identities and zombie state, independent of locale and timezone.
 //! Boot IDs prevent records surviving reboot from matching reused process identifiers.
 
-#[cfg(any(target_os = "linux", target_os = "macos", test))]
+#[cfg(any(target_os = "linux", target_os = "android", target_os = "macos", test))]
 use anyhow::Context;
-#[cfg(any(target_os = "linux", target_os = "macos", test))]
+#[cfg(any(target_os = "linux", target_os = "android", target_os = "macos", test))]
 use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
@@ -218,8 +218,8 @@ async fn read_boot_id() -> Result<String> {
     Ok(boot_id.to_owned())
 }
 
-#[cfg(any(target_os = "linux", test))]
-fn parse_stat(stat: &[u8]) -> Result<(String, u64)> {
+#[cfg(any(target_os = "linux", target_os = "android", test))]
+pub(super) fn parse_stat(stat: &[u8]) -> Result<(String, u64)> {
     // comm (field 2) can contain spaces and closing parentheses. The final ')'
     // terminates it; splitting the whole line on whitespace miscounts fields.
     let end = stat

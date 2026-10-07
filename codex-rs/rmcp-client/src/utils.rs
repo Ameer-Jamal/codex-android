@@ -18,9 +18,34 @@ pub(crate) fn create_env_for_mcp_server(
     env_vars: &[McpServerEnvVar],
 ) -> Result<HashMap<OsString, OsString>> {
     let additional_env_vars = local_stdio_env_var_names(env_vars)?;
+    // Termux's linker and temporary directory are needed by local MCP children.
+    // Remote executors continue to use their own environment.
+    let termux_env_vars: &[&str] = if env::var_os("TERMUX_VERSION").is_some() {
+        &[
+            "PREFIX",
+            "TMPDIR",
+            "TERMUX_VERSION",
+            "TERMUX_APP_PID",
+            "TERMUX_MAIN_PACKAGE_FORMAT",
+            "LD_PRELOAD",
+            "LD_LIBRARY_PATH",
+            "NPM_CONFIG_PREFIX",
+            "ANDROID_DATA",
+            "ANDROID_ROOT",
+            "ANDROID_RUNTIME_ROOT",
+            "BOOTCLASSPATH",
+            "XDG_RUNTIME_DIR",
+            "XDG_DATA_HOME",
+            "XDG_CACHE_HOME",
+            "XDG_CONFIG_HOME",
+        ]
+    } else {
+        &[]
+    };
     let mut env: HashMap<OsString, OsString> = DEFAULT_ENV_VARS
         .iter()
         .copied()
+        .chain(termux_env_vars.iter().copied())
         .chain(additional_env_vars)
         .filter_map(|var| env::var_os(var).map(|value| (OsString::from(var), value)))
         .collect();

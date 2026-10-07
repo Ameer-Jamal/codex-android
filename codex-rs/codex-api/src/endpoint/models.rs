@@ -7,10 +7,12 @@ use codex_client::HttpTransport;
 use codex_client::RequestTelemetry;
 use codex_protocol::openai_models::ModelInfo;
 use codex_protocol::openai_models::ModelsResponse;
+use codex_protocol::openai_models::partition_model_infos;
 use http::HeaderMap;
 use http::Method;
 use http::header::ETAG;
 use std::sync::Arc;
+use tracing::warn;
 use url::Url;
 
 pub struct ModelsClient<T: HttpTransport> {
@@ -86,6 +88,19 @@ impl<T: HttpTransport> ModelsClient<T> {
                     body.len()
                 ))
             })?;
+        // Un modello con un messaggio fuori misura viene SCARTATO LUI, con un
+        // avviso che ne dice slug, campo e byte: gli altri restano serviti. Se
+        // non ne resta nessuno valido l'errore resta, com'era.
+        let (models, invalid) = partition_model_infos(models);
+        for error in &invalid {
+            warn!("discarding model with an oversized message: {error}");
+        }
+        if models.is_empty() && !invalid.is_empty() {
+            return Err(ApiError::Stream(format!(
+                "invalid model message in models response: {}",
+                invalid[0]
+            )));
+        }
 
         Ok((models, header_etag))
     }
@@ -225,6 +240,40 @@ mod tests {
             },
             stream_idle_timeout: Duration::from_secs(1),
         }
+    }
+
+    fn model_with_slug_and_instructions(slug: &str, len: usize) -> ModelInfo {
+        let mut value = model_with_persistent_instructions(len);
+        value.slug = slug.to_string();
+        value.display_name = slug.to_string();
+        value
+    }
+
+    fn model_with_persistent_instructions(len: usize) -> ModelInfo {
+        serde_json::from_value(json!({
+            "slug": "gpt-test",
+            "display_name": "gpt-test",
+            "description": "desc",
+            "default_reasoning_level": "medium",
+            "supported_reasoning_levels": [{"effort": "medium", "description": "medium"}],
+            "shell_type": "shell_command",
+            "visibility": "list",
+            "supported_in_api": true,
+            "priority": 1,
+            "upgrade": null,
+            "support_verbosity": false,
+            "default_verbosity": null,
+            "apply_patch_tool_type": null,
+            "truncation_policy": {"mode": "bytes", "limit": 10_000},
+            "supports_image_detail_original": false,
+            "context_window": 272_000,
+            "experimental_supported_tools": [],
+            "model_messages": {
+                "instructions_template": "template",
+                "persistent_instructions": "x".repeat(len)
+            }
+        }))
+        .expect("test model should deserialize")
     }
 
     #[test]
@@ -427,5 +476,98 @@ mod tests {
 
         assert_eq!(models.len(), 0);
         assert_eq!(etag, Some("\"abc\"".to_string()));
+    }
+
+    #[tokio::test]
+    async fn remote_models_loader_drops_only_the_oversized_model() {
+        // Un modello fuori misura non deve azzerare il catalogo: si scarta lui,
+        // gli altri restano serviti. Prima un solo campo troppo lungo rendeva
+        // illeggibile TUTTA la risposta e il chiamante ripiegava sull'elenco
+        // compilato nel binario — dove i modelli nuovi non ci sono.
+        let response = ModelsResponse {
+            models: vec![
+                model_with_slug_and_instructions("gpt-ok-1", 0),
+                model_with_slug_and_instructions("gpt-too-long", 8 * 1024 + 1),
+                model_with_slug_and_instructions("gpt-ok-2", 8 * 1024),
+            ],
+        };
+        let transport = CapturingTransport {
+            last_request: Arc::new(Mutex::new(None)),
+            body: Arc::new(response),
+            etag: None,
+        };
+        let provider = provider("https://example.com/api/codex");
+        let request_url = ModelsClient::<CapturingTransport>::request_url(&provider, "0.99.0");
+        let client = ModelsClient::new(transport, provider, Arc::new(DummyAuth));
+
+        let (models, _etag) = client
+            .list_models(
+                request_url,
+                HeaderMap::new(),
+                /*response_body_limit_bytes*/ None,
+            )
+            .await
+            .expect("one oversized model must not fail the whole response");
+        assert_eq!(models.len(), 2, "the two valid models are served");
+        assert!(models.iter().all(|model| model.slug != "gpt-too-long"));
+    }
+
+    #[tokio::test]
+    async fn remote_models_loader_accepts_the_exact_limit() {
+        let response = ModelsResponse {
+            models: vec![model_with_slug_and_instructions("gpt-exact", 8 * 1024)],
+        };
+        let transport = CapturingTransport {
+            last_request: Arc::new(Mutex::new(None)),
+            body: Arc::new(response),
+            etag: None,
+        };
+        let provider = provider("https://example.com/api/codex");
+        let request_url = ModelsClient::<CapturingTransport>::request_url(&provider, "0.99.0");
+        let client = ModelsClient::new(transport, provider, Arc::new(DummyAuth));
+
+        let (models, _etag) = client
+            .list_models(
+                request_url,
+                HeaderMap::new(),
+                /*response_body_limit_bytes*/ None,
+            )
+            .await
+            .expect("exact-limit remote model should load");
+        assert_eq!(models.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn remote_models_loader_still_fails_when_every_model_is_oversized() {
+        // Se non ne resta nemmeno uno valido l'errore resta, com'era: non c'e'
+        // un catalogo da servire, e fingere il contrario sarebbe peggio.
+        let response = ModelsResponse {
+            models: vec![
+                model_with_slug_and_instructions("bad-1", 8 * 1024 + 1),
+                model_with_slug_and_instructions("bad-2", 8 * 1024 + 1),
+            ],
+        };
+        let transport = CapturingTransport {
+            last_request: Arc::new(Mutex::new(None)),
+            body: Arc::new(response),
+            etag: None,
+        };
+        let provider = provider("https://example.com/api/codex");
+        let request_url = ModelsClient::<CapturingTransport>::request_url(&provider, "0.99.0");
+        let client = ModelsClient::new(transport, provider, Arc::new(DummyAuth));
+
+        let error = client
+            .list_models(
+                request_url,
+                HeaderMap::new(),
+                /*response_body_limit_bytes*/ None,
+            )
+            .await
+            .expect_err("a catalog with no valid model is still an error");
+        let message = error.to_string();
+        assert!(message.contains("invalid model message in models response"));
+        assert!(message.contains("persistent_instructions"));
+        assert!(message.contains("8193"));
+        assert!(message.contains("8192"));
     }
 }

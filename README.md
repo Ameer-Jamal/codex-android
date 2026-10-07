@@ -1,81 +1,164 @@
-<p align="center"><strong>Codex CLI</strong> is a coding agent from OpenAI that runs locally on your computer.
 <p align="center">
-  <img src="https://github.com/openai/codex/blob/main/.github/codex-cli-splash.png" alt="Codex CLI splash" width="80%" />
+  <img src="https://raw.githubusercontent.com/Ameer-Jamal/codex-android/main/assets/icon.png" width="112" alt="Codex for Android icon" />
 </p>
-</br>
-If you want Codex in your code editor (VS Code, Cursor, Windsurf), <a href="https://developers.openai.com/codex/ide">install in your IDE.</a>
-</br>If you want the desktop app experience, run <code>codex app</code> or visit <a href="https://chatgpt.com/codex?app-landing-page=true">the Codex App page</a>.
-</br>If you are looking for the <em>cloud-based agent</em> from OpenAI, <strong>Codex Web</strong>, go to <a href="https://chatgpt.com/codex">chatgpt.com/codex</a>.</p>
 
----
+# Codex for Android
 
-## Quickstart
+OpenAI Codex for ARM64 Android phones and tablets running Termux. This community
+project keeps the upstream Rust CLI, TUI, app-server, protocols, and SDKs, with a
+small Android compatibility layer. It is not an Android APK or an official
+OpenAI distribution.
 
-### Installing and running Codex CLI
+**Early access:** ARM64 release binaries are available. Real-device acceptance is
+still pending; see the [validation record](android/VALIDATION.md).
 
-Run the following on Mac or Linux to install Codex CLI:
+The source baseline is [OpenAI Codex `rust-v0.160.0`](https://github.com/openai/codex/releases/tag/rust-v0.160.0).
+Vivling, VL loop scheduling, fleet identity experiments, and VL branding have
+been removed. Standard upstream tools, image inputs, goals, and experimental
+protocols remain upstream-compatible; their presence is not Android certification.
 
-```shell
-curl -fsSL https://chatgpt.com/codex/install.sh | sh
+## Supported environment
+
+- Android ARM64 (`aarch64-linux-android`), Android 10/API 29 or newer.
+- Standard Termux installation using the `com.termux` application directory.
+- 32-bit ARM, x86 Android, renamed Termux packages, proot distributions, and
+  native APK embedding are not supported by this build path.
+
+Use the [Termux project's installation instructions](https://github.com/termux/termux-app#installation).
+Install Termux and any Termux plugins from the same source, as their signatures
+must match. In Termux:
+
+```sh
+pkg update
+pkg upgrade
+pkg install nodejs-lts git ripgrep python termux-tools ca-certificates
+node --version  # Node 22 or newer
+uname -m       # aarch64
 ```
 
-Run the following on Windows to install Codex CLI:
+Keep projects and runtime state in Termux's private home. Shared Android storage
+can reject executable permissions, Unix sockets, locks, and SQLite journal files.
 
-```shell
-powershell -ExecutionPolicy ByPass -c "irm https://chatgpt.com/codex/install.ps1 | iex"
+## Installation
+
+Install the public npm package in Termux:
+
+```sh
+npm install -g codex-android
+codex --version
 ```
 
-The standalone installers download from `https://releases.openai.com/codex` by default and fall back to GitHub Releases if a metadata or asset download is unavailable. To force GitHub Releases, set `CODEX_INSTALLER_USE_RELEASES_OPENAI_COM` to `false` (`0` and `no` are also accepted):
+The package includes the Android ARM64 runtime, its code-mode helper, and the
+required C++ shared library. Installation does not compile Rust or fetch a separate
+runtime. npm's postinstall repairs the launcher shebang for Termux.
+If npm blocks lifecycle scripts, explicitly permit this package's script using
+your npm version's script policy.
 
-```shell
-curl -fsSL https://chatgpt.com/codex/install.sh | CODEX_INSTALLER_USE_RELEASES_OPENAI_COM=false sh
+To update:
+
+```sh
+npm install -g codex-android@latest
 ```
 
-```powershell
-$env:CODEX_INSTALLER_USE_RELEASES_OPENAI_COM='false'; irm https://chatgpt.com/codex/install.ps1 | iex
+For a manual or offline installation, download the `.tgz` and matching `.sha256`
+from [GitHub releases](https://github.com/Ameer-Jamal/codex-android/releases), transfer
+both to Termux's private home, and run:
+
+```sh
+sha256sum -c codex-android-0.160.0-android.1.tgz.sha256
+npm install -g ./codex-android-0.160.0-android.1.tgz --foreground-scripts
 ```
 
-Codex CLI can also be installed via the following package managers:
+The package is named `codex-android`; it installs the normal `codex` command.
+It can replace an existing command with that name. Do not install the source-only
+`codex-cli/` directory: it does not contain a compiled runtime.
 
-```shell
-# Install using npm
-npm install -g @openai/codex
+The launcher defaults to `~/.codex-android`; `CODEX_HOME` overrides it. Use a fresh
+home rather than reusing a Codex VL database, which has incompatible migrations.
+Existing VL databases are not modified or migrated. Reauthenticate in the new
+home. Stop running Codex processes before replacing an installed artifact.
+
+## Authentication and use
+
+```sh
+codex login --device-auth
+codex login status
+cd ~/my-project
+codex
 ```
 
-```shell
-# Install using Homebrew
-brew install --cask codex
+Device-code authentication avoids a local browser callback. Browser login with
+`codex login` uses `termux-open-url`. For API-key authentication, supply the key
+through standard input rather than a command-line argument:
+
+```sh
+printenv OPENAI_API_KEY | codex login --with-api-key
+codex exec 'Explain this repository'
+codex resume
 ```
 
-Then simply run `codex` to get started.
+Account access and device-code availability follow the
+[upstream authentication requirements](https://developers.openai.com/codex/auth/).
+Authentication files contain credentials; keep the Codex home private.
 
-<details>
-<summary>You can also go to the <a href="https://github.com/openai/codex/releases/latest">latest GitHub Release</a> and download the appropriate binary for your platform.</summary>
+Android does not provide the desktop filesystem sandbox backends. The retained
+Android execution fix only permits an unsandboxed first attempt after an actual
+approval and refuses to discard deny-read policy. Unenforceable policies still
+fail closed. Review command approvals; this project does not configure bypass
+flags or turn approvals off.
 
-Each GitHub Release contains many executables, but in practice, you likely want one of these:
+## Build from source
 
-- macOS
-  - Apple Silicon/arm64: `codex-aarch64-apple-darwin.tar.gz`
-  - x86_64 (older Mac hardware): `codex-x86_64-apple-darwin.tar.gz`
-- Linux
-  - x86_64: `codex-x86_64-unknown-linux-musl.tar.gz`
-  - arm64: `codex-aarch64-unknown-linux-musl.tar.gz`
+The build script supports cross-compilation on Linux x86_64 and macOS. Install Rust
+through rustup, Node/npm, Python 3.11+, Clang, CMake, Ninja, pkg-config, Perl, and
+Android NDK r28c (`28.2.13676358`) for your build host. On macOS, install the
+Command Line Tools and select an accepted developer toolchain. The workspace pins Rust in
+`codex-rs/rust-toolchain.toml`. From the extracted repository root:
 
-Each archive contains a single entry with the platform baked into the name (e.g., `codex-x86_64-unknown-linux-musl`), so you likely want to rename it to `codex` after extracting it.
+```sh
+export ANDROID_NDK_HOME=/absolute/path/to/android-ndk-r28c
+bash android/build.sh
+```
 
-</details>
+Outputs are under `dist/android/`. The build includes `codex`,
+`codex-code-mode-host`, and `libc++_shared.so`, with `$ORIGIN` runtime lookup.
+It downloads checksum-pinned Android V8 artifacts and verifies that V8's sandbox
+is enabled before linking. Missing or mismatched artifacts stop the build.
 
-### Using Codex with your ChatGPT plan
+The [Android workflow](.github/workflows/android.yml) performs the same build and
+uploads an artifact; it never publishes a package. Building V8 itself uses
+[the separate Android V8 workflow](.github/workflows/rusty-v8-android-release.yml).
+Native source builds inside Termux and cross builds on Windows are not
+currently supported by these scripts.
 
-Run `codex` and select **Sign in with ChatGPT**. We recommend signing into your ChatGPT account to use Codex as part of your Plus, Pro, Business, Edu, or Enterprise plan. [Learn more about what's included in your ChatGPT plan](https://help.openai.com/en/articles/11369540-codex-in-chatgpt).
+## Limitations and validation
 
-You can also use Codex with an API key, but this requires [additional setup](https://developers.openai.com/codex/auth#sign-in-with-an-api-key).
+Cross-compilation is not a device test. See [the validation record](android/VALIDATION.md)
+for actual results and [the runtime checks](qa/runtime-suite/README.md) for device
+acceptance. In particular, verify login, PTY resizing, Ctrl-C, shell execution,
+patching, resume, MCP, and code-mode execution on a real ARM64 device before
+releasing a build.
 
-## Docs
+Android can terminate background or CPU-heavy processes; see the
+[Termux Android process-limit note](https://github.com/termux/termux-app#readme).
+Desktop voice/WebRTC integration is not supported in a plain Termux CLI.
+Advisory-lock fallback on filesystems without locking cannot guarantee concurrent
+writer exclusion. Prefer private storage and one writer per session. SQLite falls
+back to a single connection with fully synchronized rollback journaling if WAL initialization fails.
+Automatic desktop update paths are disabled on Android; update by installing a
+new verified local artifact. Upstream remote-control APIs remain available for
+compatibility, but remote pairing and persistent daemon operation are not certified.
 
-- [**Codex Documentation**](https://developers.openai.com/codex)
-- [**Contributing**](./docs/contributing.md)
-- [**Installing & building**](./docs/install.md)
-- [**Open source fund**](./docs/open-source-fund.md)
+## Maintenance and attribution
 
-This repository is licensed under the [Apache-2.0 License](LICENSE).
+[Android maintenance notes](android/MAINTENANCE.md) describe the remaining upstream
+delta, the repository assessment, and synchronization procedure. General upstream
+source documentation remains under `docs/` and `codex-rs/`; its desktop installation
+and publishing instructions do not distribute this Android build.
+
+Based on [OpenAI Codex](https://github.com/openai/codex), with Android/Termux work
+from [Codex VL](https://github.com/DioNanos/codex-vl) and
+[codex-termux](https://github.com/DioNanos/codex-termux) by Davide A. Guglielmi.
+V8 is from [denoland/rusty_v8](https://github.com/denoland/rusty_v8).
+Apache-2.0; see [LICENSE](LICENSE), [NOTICE](NOTICE), and retained third-party
+licenses and notices. This project is not affiliated with or endorsed by OpenAI.

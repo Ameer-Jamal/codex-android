@@ -34,6 +34,7 @@ use codex_app_server_protocol::RemoteControlConnectionStatus;
 use codex_app_server_protocol::RemoteControlPairingStartResponse;
 use codex_app_server_transport::app_server_control_socket_path;
 use codex_utils_home_dir::find_codex_home;
+#[cfg(any(test, not(target_os = "android")))]
 use managed_install::managed_codex_bin;
 #[cfg(any(unix, windows))]
 use managed_install::managed_codex_version;
@@ -324,7 +325,11 @@ impl Daemon {
             .as_path()
             .to_path_buf();
         let state_dir = codex_home.as_path().join(STATE_DIR_NAME);
+        #[cfg(not(target_os = "android"))]
         let managed_codex_bin = managed_codex_bin(codex_home.as_path());
+        #[cfg(target_os = "android")]
+        let managed_codex_bin = std::env::current_exe()
+            .context("failed to locate the installed Android Codex binary")?;
         // Old CLIs must not mistake a daemon-owned installation for their backend.
         let (pid_file, update_pid_file) =
             if managed_codex_bin.starts_with(codex_home.as_path().join("packages/standalone")) {
@@ -868,7 +873,8 @@ impl Daemon {
 
     async fn ensure_managed_updater(&self, settings: &DaemonSettings) -> Result<bool> {
         let updater = backend::pid_update_loop_backend(self.backend_paths(settings));
-        if !settings.auto_update_enabled {
+        // Android packages are updated by reinstalling the locally built artifact.
+        if cfg!(target_os = "android") || !settings.auto_update_enabled {
             updater.stop().await?;
             return Ok(false);
         }
@@ -918,6 +924,10 @@ impl Daemon {
     }
 
     fn current_managed_codex_bin(&self) -> Result<PathBuf> {
+        if cfg!(target_os = "android") {
+            return std::env::current_exe()
+                .context("failed to locate the installed Android Codex binary");
+        }
         // An installer can move a legacy binary into bin/ while this updater runs.
         let home = self
             .settings_file
@@ -1126,6 +1136,14 @@ fn try_lock_file(file: &tokio::fs::File) -> Result<bool> {
     let err = std::io::Error::last_os_error();
     if err.raw_os_error() == Some(libc::EWOULDBLOCK) {
         return Ok(false);
+    }
+    // Preserve startup on Termux filesystems that reject advisory locking.
+    // This does not provide exclusion; use private storage and a single writer.
+    if err.kind() == std::io::ErrorKind::Unsupported
+        || err.raw_os_error() == Some(libc::ENOTSUP)
+        || err.raw_os_error() == Some(libc::EOPNOTSUPP)
+    {
+        return Ok(true);
     }
     Err(err).context("failed to lock daemon operation")
 }

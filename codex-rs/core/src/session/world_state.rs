@@ -28,6 +28,7 @@ use codex_file_system::FileSystemSandboxContext;
 use codex_prompts::ApprovalPromptContext;
 use codex_prompts::ResolvedModelMessages;
 use codex_prompts::render_model_instructions;
+use codex_protocol::error::CodexErr;
 use codex_protocol::error::Result as CodexResult;
 use codex_protocol::models::BaseInstructionsProvenance;
 use codex_protocol::protocol::MultiAgentVersion;
@@ -217,13 +218,18 @@ impl Session {
                         .experimental_supported_tools
                         .iter()
                         .any(|tool| tool == "send_user_message_async");
-            world_state.add_section(PersistentModeState::new(
+            let persistent_mode = PersistentModeState::new(
+                &step_context.settings.model_info.slug,
                 turn_context.config.features.persistent_execution_enabled(
                     step_context.settings.effective_reasoning_effort().as_ref(),
                 ),
                 model_messages.persistent_instructions(),
                 send_user_message_async_available,
-            ));
+            )
+            .map_err(|err| {
+                CodexErr::Fatal(format!("invalid persistent model instructions: {err}"))
+            })?;
+            world_state.add_section(persistent_mode);
         }
         if turn_context.config.include_environment_context {
             let current_date = self

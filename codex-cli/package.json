@@ -1,22 +1,49 @@
 {
-  "name": "@openai/codex",
-  "version": "0.0.0-dev",
-  "description": "Codex CLI is a coding agent from OpenAI that runs locally on your computer.",
+  "name": "codex-android",
+  "version": "0.160.0-android.1",
+  "description": "Codex for Android: OpenAI Codex with Termux ARM64 compatibility",
   "license": "Apache-2.0",
+  "type": "module",
   "bin": {
     "codex": "bin/codex.js"
   },
-  "type": "module",
-  "engines": {
-    "node": ">=16"
+  "scripts": {
+    "postinstall": "node scripts/postinstall.js",
+    "test": "node --test tests/*.test.*"
   },
-  "files": [
-    "bin/codex.js"
+  "engines": {
+    "node": ">=22"
+  },
+  "os": [
+    "android"
   ],
+  "cpu": [
+    "arm64"
+  ],
+  "files": [
+    "bin/codex.js",
+    "scripts/postinstall.js",
+    "vendor/",
+    "licenses/",
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "assets/icon.png"
+  ],
+  "homepage": "https://github.com/Ameer-Jamal/codex-android#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/openai/codex.git",
-    "directory": "codex-cli"
+    "url": "git+https://github.com/Ameer-Jamal/codex-android.git"
   },
-  "packageManager": "pnpm@10.34.5+sha512.a4ee05f2f73658255bd6a89859c065a45c28a57daefae2c893a168ee2b73168c37b91e83e57ea67654ad03f03031746430e8bce38e362e042605fb8abc80192e"
+  "bugs": {
+    "url": "https://github.com/Ameer-Jamal/codex-android/issues"
+  },
+  "keywords": [
+    "codex",
+    "android",
+    "termux",
+    "ai",
+    "cli",
+    "arm64"
+  ]
 }

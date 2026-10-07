@@ -9,6 +9,12 @@ fn parses_start_ticks_after_comm_with_spaces_and_parentheses() {
 }
 
 #[test]
+fn incomplete_stat_cannot_be_used_as_process_identity() {
+    let error = parse_stat(b"42 (worker) S 0").expect_err("incomplete process details");
+    assert!(error.to_string().contains("start time"));
+}
+
+#[test]
 fn reads_earlier_linux_identity_field() {
     use crate::backend::pid::PidRecord;
     let mut expected = serde_json::json!({

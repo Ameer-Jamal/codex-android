@@ -22,7 +22,7 @@ use serde::Serialize;
 use tokio::fs;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncSeekExt;
-#[cfg(unix)]
+#[cfg(all(unix, not(target_os = "android")))]
 use tokio::process::Command;
 use tokio::time::sleep;
 
@@ -730,7 +730,14 @@ async fn read_process_start_time(pid: u32) -> Result<String> {
     Ok(read_process_details(pid).await?.1)
 }
 
-#[cfg(unix)]
+#[cfg(target_os = "android")]
+#[path = "pid_android.rs"]
+mod android;
+
+#[cfg(target_os = "android")]
+use android::read_process_details;
+
+#[cfg(all(unix, not(target_os = "android")))]
 async fn read_process_details(pid: u32) -> Result<(String, String)> {
     let output = Command::new("ps")
         .args(["-p", &pid.to_string(), "-o", "stat=", "-o", "lstart="])

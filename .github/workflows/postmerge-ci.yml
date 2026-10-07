@@ -1,10 +1,8 @@
 name: postmerge-ci
 
-# This is the single entrypoint for main-only CI that is intentionally outside
-# the merge-blocking suite. It keeps the broader postmerge signal in one run.
+# Optional full upstream regression coverage, including private-runner jobs.
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   # Keep reusable workflow calls alphabetized. Each child retains its own
@@ -14,16 +12,10 @@ jobs:
     uses: ./.github/workflows/rust-ci-full.yml
     secrets: inherit
 
-  v8-canary:
-    name: v8-canary
-    uses: ./.github/workflows/v8-canary.yml
-    secrets: inherit
-
   results:
     name: Postmerge CI results
     needs:
       - rust-ci-full
-      - v8-canary
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     steps:

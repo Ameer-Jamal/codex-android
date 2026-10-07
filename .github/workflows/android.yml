@@ -1,0 +1,68 @@
+name: Android ARM64
+
+on:
+  pull_request:
+    paths:
+      - "android/**"
+      - "codex-cli/**"
+      - "codex-rs/**"
+      - "scripts/*v8*"
+      - "third_party/v8/**"
+      - ".github/workflows/android.yml"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  security:
+    uses: ./.github/workflows/cargo-deny.yml
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 22
+      - run: node --test codex-cli/tests/*.test.*
+      - run: python3 -m unittest discover -s android -p 'test_*.py'
+      - run: bash -n android/build.sh qa/runtime-suite/run_cli_runtime_suite.sh
+      - run: python3 .github/scripts/verify_tui_core_boundary.py
+      - run: python3 .github/scripts/verify_cargo_workspace_manifests.py
+  build:
+    needs: [check, security]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_BUILD_JOBS: "2"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 22
+      - name: Install Android build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config perl python3
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;28.2.13676358"
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/28.2.13676358" >> "$GITHUB_ENV"
+      - name: Cross-build and package
+        run: bash android/build.sh
+      - name: Inspect Android dynamic linkage
+        run: |
+          readelf="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-readelf"
+          for binary in codex codex-code-mode-host; do
+            "$readelf" --file-header --program-headers --dynamic "codex-rs/target/aarch64-linux-android/release/$binary"
+          done
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: codex-android-arm64
+          path: dist/android/*
+          if-no-files-found: error

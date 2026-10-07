@@ -1,5 +1,10 @@
 OpenAI Codex
 Copyright 2025 OpenAI
+Copyright 2026 Davide A. Guglielmi
+
+Codex for Android contains Android and Termux compatibility work derived
+from Codex VL and codex-termux by Davide A. Guglielmi. Retained additions are
+distributed under the Apache License, Version 2.0 together with upstream Codex.
 
 This project includes code derived from [Ratatui](https://github.com/ratatui/ratatui), licensed under the MIT license.
 Copyright (c) 2016-2022 Florian Dehau

@@ -33,6 +33,12 @@ const STATE_DB_FILENAME: &str = "state_5.sqlite";
 const THREAD_HISTORY_DB_FILENAME: &str = "thread_history_1.sqlite";
 
 #[derive(Clone, Copy)]
+enum WritableJournalMode {
+    Wal,
+    Rollback,
+}
+
+#[derive(Clone, Copy)]
 struct RuntimeDbSpec {
     label: &'static str,
     filename: &'static str,
@@ -308,17 +314,43 @@ impl SqliteConfig {
 
     /// Open a writable Codex SQLite database, creating it if necessary.
     pub async fn open_read_write_pool(&self, path: &Path) -> Result<SqlitePool, Error> {
+        let result = self
+            .open_read_write_pool_with_journal(path, WritableJournalMode::Wal)
+            .await;
+        if cfg!(target_os = "android") && result.is_err() {
+            tracing::warn!(
+                "SQLite WAL initialization failed; retrying with a single connection and rollback journal"
+            );
+            return self
+                .open_read_write_pool_with_journal(path, WritableJournalMode::Rollback)
+                .await;
+        }
+        result
+    }
+
+    async fn open_read_write_pool_with_journal(
+        &self,
+        path: &Path,
+        journal_mode: WritableJournalMode,
+    ) -> Result<SqlitePool, Error> {
+        let (journal_pragma, max_connections, synchronous) = match journal_mode {
+            WritableJournalMode::Rollback => {
+                ("PRAGMA journal_mode = DELETE", 1, SqliteSynchronous::Full)
+            }
+            WritableJournalMode::Wal => ("PRAGMA journal_mode = WAL", 5, SqliteSynchronous::Normal),
+        };
         let options = SqliteConnectOptions::new()
             .filename(path)
             .create_if_missing(true)
-            .synchronous(SqliteSynchronous::Normal)
+            .synchronous(synchronous)
             .busy_timeout(Duration::from_secs(5))
             .log_statements(LevelFilter::Off);
         // SQLx retries after_connect errors, eventually replacing them with PoolTimedOut.
         // Return the first initialization error directly while opening this pool.
         let (init_error_tx, mut init_error_rx) = tokio::sync::mpsc::channel(/*buffer*/ 1);
-        let pool_options = SqlitePoolOptions::new().max_connections(5).after_connect(
-            move |connection, _metadata| {
+        let pool_options = SqlitePoolOptions::new()
+            .max_connections(max_connections)
+            .after_connect(move |connection, _metadata| {
                 let init_error_tx = init_error_tx.clone();
                 Box::pin(async move {
                     let result = async {
@@ -342,9 +374,7 @@ impl SqliteConfig {
                                 .execute(&mut *connection)
                                 .await?;
                         }
-                        sqlx::query("PRAGMA journal_mode = WAL")
-                            .execute(connection)
-                            .await?;
+                        sqlx::query(journal_pragma).execute(connection).await?;
                         Ok(())
                     }
                     .await;
@@ -355,8 +385,7 @@ impl SqliteConfig {
                         Err(error) => error.into_inner(),
                     })
                 })
-            },
-        );
+            });
         tokio::select! {
             biased;
             Some(error) = init_error_rx.recv() => Err(error),

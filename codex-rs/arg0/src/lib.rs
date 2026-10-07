@@ -24,6 +24,15 @@ const MISSPELLED_APPLY_PATCH_ARG0: &str = "applypatch";
 const EXECVE_WRAPPER_ARG0: &str = "codex-execve-wrapper";
 const LOCK_FILENAME: &str = ".lock";
 
+fn is_unsupported_file_lock_error(err: &std::io::Error) -> bool {
+    if err.kind() == std::io::ErrorKind::Unsupported {
+        return true;
+    }
+
+    let raw = err.raw_os_error();
+    raw == Some(libc::ENOTSUP) || raw == Some(libc::EOPNOTSUPP)
+}
+
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Arg0DispatchPaths {
     /// Stable path to the current Codex executable for child re-execs.
@@ -387,7 +396,12 @@ fn prepare_path_entry_for_codex_aliases(
         .create(true)
         .truncate(false)
         .open(&lock_path)?;
-    lock_file.try_lock()?;
+    if let Err(err) = lock_file.try_lock() {
+        let err = std::io::Error::from(err);
+        if !is_unsupported_file_lock_error(&err) {
+            return Err(err);
+        }
+    }
 
     for filename in &[
         APPLY_PATCH_ARG0,
@@ -531,7 +545,13 @@ fn try_lock_dir(dir: &Path) -> std::io::Result<Option<File>> {
     match lock_file.try_lock() {
         Ok(()) => Ok(Some(lock_file)),
         Err(std::fs::TryLockError::WouldBlock) => Ok(None),
-        Err(err) => Err(err.into()),
+        Err(err) => {
+            let err = std::io::Error::from(err);
+            if is_unsupported_file_lock_error(&err) {
+                return Ok(None);
+            }
+            Err(err)
+        }
     }
 }
 

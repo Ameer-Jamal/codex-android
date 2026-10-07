@@ -1,17 +1,18 @@
-# Security Policy
+# Security
 
-Thank you for helping us keep Codex secure!
+Codex for Android is a community derivative of OpenAI Codex. Report upstream
+vulnerabilities through [OpenAI's security policy](https://github.com/openai/codex/security/policy).
+For Android-specific issues, use the private security reporting channel of the
+repository that distributes your build; this source archive has no configured
+maintainer or disclosure address. Do not post credentials in public issues.
 
-## Reporting Security Issues
+Android execution retains upstream approval and deny-read policy checks. Android
+has no supported desktop filesystem sandbox backend; approval does not create OS
+isolation. TLS verification, socket ownership and permission checks, and V8
+sandbox requirements are preserved. Existing 8 KiB model-instruction and Guardian
+policy limits are retained. Android V8 downloads use committed checksums.
 
-The security is essential to OpenAI's mission. We appreciate the work of security researchers acting in good faith to identify and responsibly report potential vulnerabilities, helping us maintain strong privacy and security standards for our users and technology.
-
-Our security program is managed through Bugcrowd, and we ask that any validated vulnerabilities be reported via the [Bugcrowd program](https://bugcrowd.com/engagements/openai).
-
-## Vulnerability Disclosure Program
-
-Our Vulnerability Program Guidelines are defined on our [Bugcrowd program page](https://bugcrowd.com/engagements/openai).
-
-## How to operate CODEX safely
-
-For details on Codex security boundaries, including sandboxing, approvals, and network controls, see [Agent approvals & security](https://developers.openai.com/codex/agent-approvals-security).
+Install only artifacts from a build you trust and verify their digest. Update by
+reinstalling the locally built artifact. Keep projects, authentication, and state
+in Termux private storage. Unsupported advisory locking provides reduced writer
+coordination; avoid simultaneous writers to the same session on such filesystems.
