@@ -7,6 +7,10 @@ verified OpenAI upstream history and targets `Ameer-Jamal/codex-android` and the
 public npm package `codex-android`. Publication status is shown by the linked
 GitHub release and npm registry, rather than inferred from local build files.
 
+The source is public on GitHub. npm accepted browser login but rejected publishing
+with HTTP 403 because account 2FA is not enabled. The first registry publication
+and installation from that published package remain pending account setup.
+
 ## Completed checks
 
 | Check                                                                  | Result                                    |
@@ -89,6 +93,9 @@ preparation. Both executables contain Android API 29 notes, use
 are ARM64 ELF binaries; their dynamic dependencies are Android system libraries.
 The archive checksum matches its sidecar. This is an actual runtime package,
 separate from the earlier fixture-header packaging smoke check.
+All load segments in the three bundled ELF files have 16 KiB alignment, with
+congruent file offsets and virtual addresses. This checks their binary layout;
+execution on a device with 16 KiB pages is still unverified.
 
 Native runtime SHA-256 values before final metadata/artwork repackaging:
 
