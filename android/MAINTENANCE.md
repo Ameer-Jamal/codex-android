@@ -116,5 +116,10 @@ Use browser npm login and keep 2FA enabled. Do not commit credentials. Upload th
 same package and checksum to a GitHub release tagged `v0.160.0-android.1`; mark the
 initial GitHub release as a prerelease until device acceptance is complete.
 Future releases must use a new npm version and regenerate their checksum.
+For slow upload connections, create the GitHub prerelease first, then manually
+dispatch `android-release-assets.yml` with the published npm version and the
+local tarball's SHA-256. It downloads the public registry package, verifies the
+supplied checksum, and attaches that identical package and checksum to the
+existing release. It never publishes to npm or receives npm credentials.
 Desktop regression workflows remain available for manual upstream audits;
 Android builds and the retained dependency-security check run automatically.
