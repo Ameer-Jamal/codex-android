@@ -16,6 +16,16 @@ then because approval expired during the slow upload. Official staged publishing
 completed the upload before browser approval, without weakening account security.
 Installation and execution in physical ARM64 Termux remain unverified.
 
+## README release revision
+
+`0.160.0-android.2` updates the user-facing README and package version only.
+All three bundled native runtime files match the first release byte for byte;
+copyright, license, and third-party notices are preserved. The README included
+in the package matches the repository README. Launcher tests (8) and packaging
+tests (4) passed. Publication of this revision is pending staged approval.
+Its tarball SHA-256 is
+`41d004981360598e70afbd80a8ca2ea874b06de4e650e5d94e51423803851e77`.
+
 ## Completed checks
 
 | Check                                                                  | Result                                    |

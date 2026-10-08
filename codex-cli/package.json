@@ -1,6 +1,6 @@
 {
   "name": "codex-android",
-  "version": "0.160.0-android.1",
+  "version": "0.160.0-android.2",
   "description": "Codex for Android: OpenAI Codex with Termux ARM64 compatibility",
   "license": "Apache-2.0",
   "type": "module",
