@@ -20,7 +20,7 @@ commands inside it. Use Termux's private home directory for your projects.
 ```sh
 pkg update && pkg upgrade
 pkg install nodejs-lts
-npm install -g codex-android
+npm install -g --allow-scripts=codex-android codex-android
 codex login --device-auth
 ```
 
@@ -32,6 +32,8 @@ codex
 ```
 
 The npm package installs the `codex` command and includes the Android runtime.
+The `--allow-scripts=codex-android` option approves this package's setup script
+for npm versions that block install scripts by default.
 The installer adds missing Git, ripgrep, browser-opening tools, and CA certificates
 through Termux's package manager. First launch creates your private settings
 directory automatically. You don't need Rust or a source build. Install project
@@ -87,7 +89,7 @@ requirements. Keep API keys and sign-in files private.
 Exit running Codex sessions, then install the latest package:
 
 ```sh
-npm install -g codex-android@latest
+npm install -g --allow-scripts=codex-android codex-android@latest
 ```
 
 ## Troubleshooting and limitations
@@ -100,6 +102,13 @@ npm install -g codex-android@latest
   If your npm settings block scripts, allow this package's script and reinstall.
 - **Another `codex` is installed:** both packages use the same command name.
   Remove the previous installation before installing this one.
+- **An old shell alias launches another package:** run `type codex`. Remove the old
+  alias from your shell startup file and run `unalias codex` in the current shell.
+- **App server did not become ready / socket already in use:** run
+  `codex --no-daemon` to work with the embedded server and normal approvals.
+  Deleting settings while a daemon is running can leave a live socket without its
+  connection path. Stop the daemon before resetting settings; don't delete your
+  settings directory to troubleshoot this error.
 - **Background sessions stop:** Android may terminate background or CPU-heavy
   processes. Persistent background operation is not guaranteed.
 
@@ -120,7 +129,7 @@ to Termux's private home, verify the checksum, and install the downloaded file:
 
 ```sh
 sha256sum -c codex-android-*.tgz.sha256
-npm install -g ./codex-android-*.tgz
+npm install -g --allow-scripts=codex-android ./codex-android-*.tgz
 ```
 
 To build from source, use Linux x86_64 or macOS with Rust (the pinned toolchain),

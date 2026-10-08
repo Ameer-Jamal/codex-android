@@ -53,7 +53,14 @@ GitHub's asset digest matches the cloud package checksum; the checksum asset's
 digest also matches the expected sidecar contents. No full package was transferred
 through the maintainer's computer for this release.
 
-Acceptance of the fixed package on a physical device remains pending.
+A physical Termux report confirmed `android.3` gets past the missing-home error
+and reaches daemon startup. npm 12.2.0 blocked postinstall without an explicit
+package approval, so README installation commands now include
+`--allow-scripts=codex-android`. The same report showed a live physical socket
+with a missing advertised path after the user deleted the home directory.
+An orphaned daemon is a plausible cause, not yet confirmed; embedded startup
+with `--no-daemon` is the documented recovery. Full device acceptance remains
+pending.
 The README-only `android.2` package was staged on GitHub but is superseded by this
 fix and must not be approved. Large transfers stay on GitHub.
 
