@@ -55,7 +55,7 @@ test("launcher forwards arguments, status, and an explicit Codex home", (t) => {
   assert.equal(result.status, 23, result.stderr);
   assert.equal(statSync(home).mode & 0o777, 0o700);
   assert.deepEqual(JSON.parse(result.stdout), {
-    args: ["exec", "a prompt with spaces"],
+    args: ["--no-daemon", "exec", "a prompt with spaces"],
     home,
   });
 });
@@ -150,4 +150,58 @@ test("home creation failure stops before launching Codex", (t) => {
   assert.equal(result.stdout, "");
   assert.match(result.stderr, /Unable to create Codex home/);
   assert.equal(readFileSync(home, "utf8"), "existing file");
+});
+
+test("Android uses the embedded server by default and preserves explicit daemon opt-in", async (t) => {
+  const { root, launcher } = fixture(
+    t,
+    "console.log(JSON.stringify(process.argv.slice(2)));",
+  );
+  for (const { args, daemon, expected } of [
+    { args: [], expected: ["--no-daemon"] },
+    {
+      args: ["resume", "--last"],
+      expected: ["--no-daemon", "resume", "--last"],
+    },
+    {
+      args: ["fork", "session-id"],
+      expected: ["--no-daemon", "fork", "session-id"],
+    },
+    { args: ["--", "a prompt"], expected: ["--no-daemon", "--", "a prompt"] },
+    {
+      args: ["--", "--no-daemon"],
+      expected: ["--no-daemon", "--", "--no-daemon"],
+    },
+    { args: ["--no-daemon", "resume"], expected: ["--no-daemon", "resume"] },
+    {
+      args: ["login", "--device-auth"],
+      expected: ["--no-daemon", "login", "--device-auth"],
+    },
+    {
+      args: ["app-server", "daemon", "status"],
+      daemon: "1",
+      expected: ["app-server", "daemon", "status"],
+    },
+    {
+      args: ["--remote", "ws://localhost:9000"],
+      daemon: "1",
+      expected: ["--remote", "ws://localhost:9000"],
+    },
+  ]) {
+    await t.test(
+      JSON.stringify(args) + (daemon ? " opt-in" : " default"),
+      () => {
+        const env = { ...process.env, CODEX_HOME: path.join(root, "home") };
+        delete env.CODEX_ANDROID_USE_DAEMON;
+        if (daemon) env.CODEX_ANDROID_USE_DAEMON = daemon;
+        const result = spawnSync(
+          process.execPath,
+          ["--import", androidPlatform, launcher, ...args],
+          { encoding: "utf8", env },
+        );
+        assert.equal(result.status, 0, result.stderr);
+        assert.deepEqual(JSON.parse(result.stdout), expected);
+      },
+    );
+  }
 });

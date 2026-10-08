@@ -61,6 +61,10 @@ codex exec 'Find potential bugs in this repository'
 codex resume
 ```
 
+On Android, `codex` uses the embedded server by default, including `resume` and
+`fork`. You don't need to start a background daemon. This keeps normal command
+approvals enabled.
+
 Codex can read and edit files and run commands. Review its proposed changes and
 command approvals. Android does not offer the same filesystem sandbox as desktop
 platforms; use projects you trust and keep approvals enabled.
@@ -106,6 +110,7 @@ npm install -g --allow-scripts=codex-android codex-android@latest
   alias from your shell startup file and run `unalias codex` in the current shell.
 - **App server did not become ready / socket already in use:** run
   `codex --no-daemon` to work with the embedded server and normal approvals.
+  Version `0.160.0-android.4` defaults to this mode; older versions need the flag.
   Deleting settings while a daemon is running can leave a live socket without its
   connection path. Stop the daemon before resetting settings; don't delete your
   settings directory to troubleshoot this error.

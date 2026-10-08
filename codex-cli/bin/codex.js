@@ -22,7 +22,7 @@ if (!existsSync(binary)) {
     "Android runtime is missing. Install the tarball produced by android/build.sh.",
   );
 }
-// A fresh home avoids importing incompatible VL SQLite migration history.
+// Keep this distribution's settings and sessions separate from other installs.
 const env = {
   ...process.env,
   CODEX_HOME:
@@ -41,7 +41,16 @@ try {
 delete env.CODEX_MANAGED_BY_BUN;
 delete env.CODEX_MANAGED_BY_PNPM;
 delete env.CODEX_MANAGED_BY_VITE_PLUS;
-const child = spawn(binary, process.argv.slice(2), { stdio: "inherit", env });
+// Shared daemon sockets are not yet reliable on Termux. Use upstream's embedded
+// server without changing approvals or sandbox policy. Explicit opt-in retains
+// access to advanced upstream commands that require a shared server.
+const args = process.argv.slice(2);
+const promptDelimiter = args.indexOf("--");
+const options = promptDelimiter === -1 ? args : args.slice(0, promptDelimiter);
+if (env.CODEX_ANDROID_USE_DAEMON !== "1" && !options.includes("--no-daemon")) {
+  args.unshift("--no-daemon");
+}
+const child = spawn(binary, args, { stdio: "inherit", env });
 child.on("error", (error) => {
   console.error(`Unable to start Codex: ${error.message}`);
   process.exit(1);

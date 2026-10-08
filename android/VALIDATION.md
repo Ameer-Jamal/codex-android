@@ -64,6 +64,24 @@ pending.
 The README-only `android.2` package was staged on GitHub but is superseded by this
 fix and must not be approved. Large transfers stay on GitHub.
 
+## Embedded-server default revision
+
+A further physical Termux report showed plain `codex` again failing to attach to
+the managed daemon, with a physical socket occupied and advertised path missing.
+The user previously confirmed `codex --no-daemon` works. The exact daemon recovery
+cause remains unconfirmed; the installation is not certified for shared daemons.
+
+`0.160.0-android.4` makes the package launcher use upstream's embedded server by
+default. It preserves explicit arguments, settings, approvals and sandbox policy.
+The native runtime source is unchanged. A maintainer-only environment opt-in
+leaves arguments unchanged for testing shared-server commands.
+
+Node tests (24, including nested cases) and packaging tests (4) passed locally.
+Coverage includes default launch, resume, fork, prompt delimiters, explicit
+`--no-daemon`, login and daemon opt-in. Native host CLI help parsing confirmed
+`--no-daemon` is accepted with login and exec. This revision is pending cloud
+build/publication and physical-device acceptance.
+
 ## Completed checks
 
 | Check                                                                  | Result                                    |

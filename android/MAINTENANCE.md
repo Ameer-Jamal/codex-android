@@ -131,3 +131,18 @@ supplied checksum, and attaches that identical package and checksum to the
 existing release. It never publishes to npm or receives npm credentials.
 Desktop regression workflows remain available for manual upstream audits;
 Android builds and the retained dependency-security check run automatically.
+
+## Android interactive server default
+
+Starting with `0.160.0-android.4`, the npm launcher passes upstream's
+`--no-daemon` by default. A physical Termux user confirmed embedded sessions work
+but reported repeat failures attaching to a shared daemon socket. The underlying
+daemon/socket recovery issue is not resolved; this default avoids that dependency
+for normal interactive sessions, resume and fork without changing security
+approvals. Explicit `--no-daemon` is not duplicated, and arguments after `--` stay
+prompt text. Native Codex code and protocols remain unchanged.
+
+For maintainer testing of shared-server commands or explicit remote endpoints,
+`CODEX_ANDROID_USE_DAEMON=1 codex ...` leaves native arguments unchanged. This is
+an experimental opt-in, not a supported Android daemon workflow. Stop live daemons
+before resetting their settings directories.
