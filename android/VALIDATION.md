@@ -19,12 +19,12 @@ Installation and execution in physical ARM64 Termux remain unverified.
 ## README release revision
 
 `0.160.0-android.2` updates the user-facing README and package version only.
-All three bundled native runtime files match the first release byte for byte;
-copyright, license, and third-party notices are preserved. The README included
-in the package matches the repository README. Launcher tests (8) and packaging
-tests (4) passed. Publication of this revision is pending staged approval.
-Its tarball SHA-256 is
-`41d004981360598e70afbd80a8ca2ea874b06de4e650e5d94e51423803851e77`.
+Launcher tests (8) and packaging tests (4) passed. The local documentation-only
+repack preserved the first release's native bytes and legal notices, but its
+upload was stopped to avoid saturating the maintainer's connection. It is not
+an approved release artifact. Publication now uses a fresh, successful GitHub
+Android build and stage-only npm trusted publishing. The final cloud-built
+checksum and registry verification will be recorded after approval.
 
 ## Completed checks
 

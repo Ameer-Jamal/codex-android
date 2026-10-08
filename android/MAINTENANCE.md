@@ -104,30 +104,26 @@ upstream ancestry. `upstream` points to OpenAI Codex; `origin` points to
 
 ## Publishing
 
-After completing validation, build with `bash android/build.sh`. Inspect the
-package contents with `npm publish --dry-run --ignore-scripts dist/android/*.tgz`.
-Publish the complete tarball, never the source-only `codex-cli/` directory:
+Use GitHub Actions for native builds and registry uploads so large transfers do
+not consume a maintainer's home connection. The Android ARM64 workflow builds,
+checks, and stores the runtime package. After that run succeeds, dispatch
+`android-publish.yml` on the same main commit with its `build_run_id`. The staging
+workflow verifies the build's repository, workflow, commit, and success, checks
+the package metadata, README, licenses, and checksum, then stages it on npm.
 
-```sh
-npm publish dist/android/codex-android-0.160.0-android.1.tgz --access public --tag latest
-```
+Configure npm trusted publishing once for `Ameer-Jamal/codex-android`, workflow
+`android-publish.yml`, with **stage-only** permission. It uses GitHub OIDC, with
+no npm token stored in repository secrets. The workflow cannot directly publish.
+A maintainer reviews the staged checksum and approves it using npm's website or
+`npm stage approve <stage-id> --auth-type=web`. Keep account 2FA enabled.
 
-Use browser npm login and keep 2FA enabled. Do not commit credentials. Upload the
-same package and checksum to a GitHub release tagged `v0.160.0-android.1`; mark the
-initial GitHub release as a prerelease until device acceptance is complete.
-Future releases must use a new npm version and regenerate their checksum.
-For large packages on slow connections, use npm 11.15 or newer's
-[staged publishing](https://docs.npmjs.com/staged-publishing/) so approval happens
-after the upload. Direct publishing approval can expire while uploading:
+Local builds remain available with `bash android/build.sh`; publish only the
+complete generated tarball, never the source-only `codex-cli/` directory.
+Use staged publishing for local uploads if necessary, as direct approval can
+expire during a slow transfer. Future releases must use a new package version.
 
-```sh
-npm stage publish dist/android/codex-android-0.160.0-android.1.tgz --access public --tag latest
-npm stage view <stage-id>
-npm stage approve <stage-id> --auth-type=web
-```
-
-Verify the staged version, tag, and checksum before approval, then download the
-public registry tarball and compare its SHA-256 with the release sidecar.
+After approval, create a GitHub prerelease for that version until device acceptance
+is complete. Mirror the exact public registry package and checksum to the release.
 For slow upload connections, create the GitHub prerelease first, then manually
 dispatch `android-release-assets.yml` with the published npm version and the
 local tarball's SHA-256. It downloads the public registry package, verifies the

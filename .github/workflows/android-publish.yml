@@ -1,0 +1,84 @@
+name: Stage Android npm release
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_run_id:
+        description: Successful Android ARM64 run for this exact main commit
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-npm-stage
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    if: github.repository == 'Ameer-Jamal/codex-android' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    env:
+      BUILD_RUN_ID: ${{ inputs.build_run_id }}
+      GH_REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 22
+      - name: Verify successful source build
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$BUILD_RUN_ID" =~ ^[0-9]+$ ]]
+          gh api "repos/$GH_REPO/actions/runs/$BUILD_RUN_ID" > "$RUNNER_TEMP/build.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          run = json.loads((Path(os.environ['RUNNER_TEMP']) / 'build.json').read_text())
+          assert run['conclusion'] == 'success', 'Android build must pass first'
+          assert run['head_sha'] == os.environ['GITHUB_SHA'], 'Build must match this commit'
+          assert run['head_branch'] == 'main'
+          assert run['head_repository']['full_name'] == os.environ['GITHUB_REPOSITORY']
+          assert run['path'] == '.github/workflows/android.yml'
+          PY
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: codex-android-arm64
+          path: dist/android
+          run-id: ${{ inputs.build_run_id }}
+          github-token: ${{ github.token }}
+      - name: Verify package and record checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, re, tarfile
+          from pathlib import Path
+          manifest = json.loads(Path('codex-cli/package.json').read_text())
+          version = manifest['version']
+          assert re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+-android\.[0-9]+', version)
+          archive = Path(f'dist/android/codex-android-{version}.tgz')
+          digest = hashlib.file_digest(archive.open('rb'), 'sha256').hexdigest()
+          sidecar = archive.with_name(archive.name + '.sha256').read_text().strip()
+          assert sidecar == f'{digest}  {archive.name}'
+          with tarfile.open(archive) as package:
+              assert json.load(package.extractfile('package/package.json')) == manifest
+              for name in ['README.md', 'LICENSE', 'NOTICE']:
+                  assert package.extractfile('package/' + name).read() == Path(name).read_bytes()
+          print(f'Package: codex-android@{version}; SHA-256: {digest}')
+          with Path(os.environ['GITHUB_ENV']).open('a') as output:
+              output.write(f'PACKAGE_ARCHIVE={archive}\n')
+          with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a') as output:
+              output.write(f'Package: `codex-android@{version}`\n\nSHA-256: `{digest}`\n')
+          PY
+      - name: Install npm with staged publishing support
+        run: npm install --global npm@11.21.0 --ignore-scripts
+      - name: Stage through npm trusted publishing
+        run: npm stage publish "$PACKAGE_ARCHIVE" --access public --tag latest --ignore-scripts
