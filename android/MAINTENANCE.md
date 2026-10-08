@@ -116,6 +116,18 @@ Use browser npm login and keep 2FA enabled. Do not commit credentials. Upload th
 same package and checksum to a GitHub release tagged `v0.160.0-android.1`; mark the
 initial GitHub release as a prerelease until device acceptance is complete.
 Future releases must use a new npm version and regenerate their checksum.
+For large packages on slow connections, use npm 11.15 or newer's
+[staged publishing](https://docs.npmjs.com/staged-publishing/) so approval happens
+after the upload. Direct publishing approval can expire while uploading:
+
+```sh
+npm stage publish dist/android/codex-android-0.160.0-android.1.tgz --access public --tag latest
+npm stage view <stage-id>
+npm stage approve <stage-id> --auth-type=web
+```
+
+Verify the staged version, tag, and checksum before approval, then download the
+public registry tarball and compare its SHA-256 with the release sidecar.
 For slow upload connections, create the GitHub prerelease first, then manually
 dispatch `android-release-assets.yml` with the published npm version and the
 local tarball's SHA-256. It downloads the public registry package, verifies the

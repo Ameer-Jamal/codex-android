@@ -7,9 +7,14 @@ verified OpenAI upstream history and targets `Ameer-Jamal/codex-android` and the
 public npm package `codex-android`. Publication status is shown by the linked
 GitHub release and npm registry, rather than inferred from local build files.
 
-The source is public on GitHub. npm accepted browser login but rejected publishing
-with HTTP 403 because account 2FA is not enabled. The first registry publication
-and installation from that published package remain pending account setup.
+The source and GitHub prerelease are public. On October 8, 2026, npm published
+`codex-android@0.160.0-android.1` with the `latest` tag. The downloaded public
+registry tarball matches the GitHub release tarball byte for byte (SHA-256 below);
+its executable permissions, icon, and NDK notices were also verified.
+Initial direct publishing attempts failed before account 2FA was enabled and
+then because approval expired during the slow upload. Official staged publishing
+completed the upload before browser approval, without weakening account security.
+Installation and execution in physical ARM64 Termux remain unverified.
 
 ## Completed checks
 
@@ -116,6 +121,10 @@ Repackaging retains the inspected native binary bytes. No physical device was av
 The build script supports Linux x86_64 and macOS NDK hosts. Linux NDK files must
 be extracted on a case-sensitive filesystem. CI performs a fresh Linux build
 from the published source and uploads its independently built artifact.
+
+The initial main-branch CI run passed security and packaging checks, but its build
+job was cancelled after remaining in prerequisite installation for two hours.
+It does not establish a successful independent Linux build of this release.
 
 ## Device acceptance and limitations
 

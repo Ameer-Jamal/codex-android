@@ -41,9 +41,8 @@ can reject executable permissions, Unix sockets, locks, and SQLite journal files
 
 ## Installation
 
-**The first npm publication is pending.** Use the verified GitHub release tarball
-below until the registry package is available. The intended npm installation in
-Termux is:
+Install the public [npm package](https://www.npmjs.com/package/codex-android) in
+Termux:
 
 ```sh
 npm install -g codex-android
