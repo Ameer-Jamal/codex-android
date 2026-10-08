@@ -14,7 +14,8 @@ its executable permissions, icon, and NDK notices were also verified.
 Initial direct publishing attempts failed before account 2FA was enabled and
 then because approval expired during the slow upload. Official staged publishing
 completed the upload before browser approval, without weakening account security.
-Installation and execution in physical ARM64 Termux remain unverified.
+A physical Termux user subsequently found the first-launch failure documented
+below. Full device acceptance remains pending.
 
 ## First-run setup release revision
 
@@ -31,7 +32,28 @@ installed; project-specific tools such as Python remain optional.
 Node launcher and installer tests (14) and packaging tests (4) passed locally,
 including first launch, repeat launch preserving settings, unusable home paths,
 missing dependencies, package-manager errors and dependency verification.
-The fixed package is not yet published or accepted on a physical device.
+On October 8, 2026, `codex-android@0.160.0-android.3` was published as npm's
+`latest` after browser approval. Public registry metadata confirms the Android
+ARM64 package, command mapping, updated user-facing README and SHA-1
+`85dbb420e88255c51f7eba1f74e768a5feb14d28`.
+
+The [full Linux Android CI run](https://github.com/Ameer-Jamal/codex-android/actions/runs/37799256766)
+passed security, checks and native compilation for source
+`a2e6524087907b13ea608b1a30b49cc829e4b665`. The
+[trusted staging workflow](https://github.com/Ameer-Jamal/codex-android/actions/runs/37806150577)
+verified the package against that source and uploaded it through npm OIDC.
+The cloud-built package SHA-256 is
+`c83c73af5ac2d5b70f0ab815ee71e433640cf127326b31f0689f66cb6cea4899`.
+
+The [release asset workflow](https://github.com/Ameer-Jamal/codex-android/actions/runs/37810129561)
+passed: standard `npm pack --ignore-scripts` downloaded the public registry
+archive on GitHub, verified its SHA-256 and mirrored it with its checksum to the
+[GitHub prerelease](https://github.com/Ameer-Jamal/codex-android/releases/tag/v0.160.0-android.3).
+GitHub's asset digest matches the cloud package checksum; the checksum asset's
+digest also matches the expected sidecar contents. No full package was transferred
+through the maintainer's computer for this release.
+
+Acceptance of the fixed package on a physical device remains pending.
 The README-only `android.2` package was staged on GitHub but is superseded by this
 fix and must not be approved. Large transfers stay on GitHub.
 
