@@ -1,5 +1,6 @@
 import { existsSync as defaultExistsSync, promises as fs } from "node:fs";
 import path from "node:path";
+import { spawnSync as defaultSpawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const DEFAULT_TERMUX_PREFIX = "/data/data/com.termux/files/usr";
@@ -76,6 +77,8 @@ export async function runPostinstall({
   platform = process.platform,
   warn = console.warn,
   existsSync = defaultExistsSync,
+  spawnSync = defaultSpawnSync,
+  log = console.log,
 } = {}) {
   if (!isTermux(env, platform)) {
     return;
@@ -95,6 +98,41 @@ export async function runPostinstall({
       `Warning: unable to check ${envPath}; launcher shebangs were left unchanged: ${error.message}`,
     );
     return;
+  }
+
+  const dependencies = [
+    ["git", "bin/git"],
+    ["ripgrep", "bin/rg"],
+    ["termux-tools", "bin/termux-open-url"],
+    ["ca-certificates", "etc/tls/cert.pem"],
+  ];
+  const missing = dependencies
+    .filter(([, file]) => !existsSync(path.join(prefix, file)))
+    .map(([name]) => name);
+  if (missing.length) {
+    log(`Installing missing Termux dependencies: ${missing.join(", ")}`);
+    const result = spawnSync(
+      path.join(prefix, "bin/pkg"),
+      ["install", "-y", ...missing],
+      {
+        stdio: "inherit",
+        env,
+      },
+    );
+    if (result.error || result.status !== 0) {
+      throw new Error(
+        `Termux dependency setup failed. Run pkg install ${missing.join(" ")} and reinstall codex-android.`,
+        { cause: result.error },
+      );
+    }
+    const unavailable = dependencies
+      .filter(([, file]) => !existsSync(path.join(prefix, file)))
+      .map(([name]) => name);
+    if (unavailable.length) {
+      throw new Error(
+        `Termux dependencies are still missing: ${unavailable.join(", ")}`,
+      );
+    }
   }
 
   for (const launcher of LAUNCHERS) {

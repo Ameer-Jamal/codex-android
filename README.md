@@ -19,7 +19,7 @@ commands inside it. Use Termux's private home directory for your projects.
 
 ```sh
 pkg update && pkg upgrade
-pkg install nodejs-lts git ripgrep python termux-tools ca-certificates
+pkg install nodejs-lts
 npm install -g codex-android
 codex login --device-auth
 ```
@@ -32,7 +32,10 @@ codex
 ```
 
 The npm package installs the `codex` command and includes the Android runtime.
-You don't need to install Rust or build anything to get started.
+The installer adds missing Git, ripgrep, browser-opening tools, and CA certificates
+through Termux's package manager. First launch creates your private settings
+directory automatically. You don't need Rust or a source build. Install project
+tools such as Python separately when your work needs them.
 
 ## What you need
 

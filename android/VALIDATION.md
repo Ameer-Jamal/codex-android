@@ -16,21 +16,30 @@ then because approval expired during the slow upload. Official staged publishing
 completed the upload before browser approval, without weakening account security.
 Installation and execution in physical ARM64 Termux remain unverified.
 
-## README release revision
+## First-run setup release revision
 
-`0.160.0-android.2` updates the user-facing README and package version only.
-Launcher tests (8) and packaging tests (4) passed. The local documentation-only
-repack preserved the first release's native bytes and legal notices, but its
-upload was stopped to avoid saturating the maintainer's connection. It is not
-an approved release artifact. Publication now uses a fresh, successful GitHub
-Android build and stage-only npm trusted publishing. The final cloud-built
-checksum and registry verification will be recorded after approval.
+A physical Termux user reported that the published `android.1` launcher failed
+when its default `~/.codex-android` directory did not exist. The launcher now
+creates the selected Codex home before starting the native process, with private
+permissions for newly created directories. Existing settings are preserved.
+
+`0.160.0-android.3` also installs missing Git, ripgrep, browser-opening tools and
+CA certificates through Termux's `pkg` during npm postinstall. Failed dependency
+setup fails installation with a recovery command. Node/npm must already be
+installed; project-specific tools such as Python remain optional.
+
+Node launcher and installer tests (14) and packaging tests (4) passed locally,
+including first launch, repeat launch preserving settings, unusable home paths,
+missing dependencies, package-manager errors and dependency verification.
+The fixed package is not yet published or accepted on a physical device.
+The README-only `android.2` package was staged on GitHub but is superseded by this
+fix and must not be approved. Large transfers stay on GitHub.
 
 ## Completed checks
 
 | Check                                                                  | Result                                    |
 | ---------------------------------------------------------------------- | ----------------------------------------- |
-| Node launcher and Termux postinstall tests                             | 8 passed                                  |
+| Node launcher and Termux postinstall tests                             | 14 passed                                 |
 | Android runtime packaging unit tests                                   | 4 passed                                  |
 | Upstream package tooling tests                                         | 28 passed                                 |
 | App-server protocol tests                                              | 313 passed, 1 skipped                     |
@@ -134,7 +143,11 @@ from the published source and uploads its independently built artifact.
 
 The initial main-branch CI run passed security and packaging checks, but its build
 job was cancelled after remaining in prerequisite installation for two hours.
-It does not establish a successful independent Linux build of this release.
+A subsequent [full Linux Android build](https://github.com/Ameer-Jamal/codex-android/actions/runs/37753271732)
+passed security, packaging checks and native compilation for commit `7589cd068`.
+Its [cloud staging workflow](https://github.com/Ameer-Jamal/codex-android/actions/runs/37761618532)
+also passed. These results precede the first-run setup fix; the fixed source
+requires its own successful build before publication.
 
 ## Device acceptance and limitations
 

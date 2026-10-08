@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Android distribution shim. Native Codex retains its upstream CLI and protocols.
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,6 +30,14 @@ const env = {
   CODEX_MANAGED_BY_NPM: "1",
   CODEX_MANAGED_PACKAGE_ROOT: root,
 };
+try {
+  mkdirSync(env.CODEX_HOME, { recursive: true, mode: 0o700 });
+} catch (error) {
+  console.error(
+    `Unable to create Codex home ${env.CODEX_HOME}: ${error.message}`,
+  );
+  process.exit(1);
+}
 delete env.CODEX_MANAGED_BY_BUN;
 delete env.CODEX_MANAGED_BY_PNPM;
 delete env.CODEX_MANAGED_BY_VITE_PLUS;
