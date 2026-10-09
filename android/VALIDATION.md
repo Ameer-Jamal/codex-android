@@ -94,6 +94,20 @@ verified the package against its source and uploaded it through npm OIDC. Its
 SHA-256 is
 `e449ebf668f375542ab14d1c31beb8452b32d7ba0674b4c0694b7e673a6770ec`.
 
+The [registry mirror workflow](https://github.com/Ameer-Jamal/codex-android/actions/runs/38002404479)
+passed: normal `npm pack --ignore-scripts` downloaded the public archive on
+GitHub, verified its SHA-256 and attached it with its checksum to the
+[prerelease](https://github.com/Ameer-Jamal/codex-android/releases/tag/v0.160.0-android.4).
+The GitHub package asset digest matches the build checksum, and the checksum
+asset digest matches its expected contents. The initial mirror failed during
+npm's temporary cached 404; the retry passed after cache expiration.
+
+Release management now uses `android/release.sh` and GitHub workflows instead
+of AI polling. Six release-control tests and four packaging tests passed, as did
+Python lint, Bash syntax, workflow YAML and embedded Bash syntax checks.
+The mirror workflow has bounded download retries, serialized uploads per version
+and a 20-minute job timeout. It never uploads on a checksum mismatch.
+
 Physical-device acceptance of the default launcher remains pending. This revision
 avoids the daemon; it does not repair shared-socket recovery.
 
@@ -101,7 +115,7 @@ avoids the daemon; it does not repair shared-socket recovery.
 
 | Check                                                                  | Result                                    |
 | ---------------------------------------------------------------------- | ----------------------------------------- |
-| Node launcher and Termux postinstall tests                             | 14 passed                                 |
+| Node launcher and Termux postinstall tests                             | 24 passed                                 |
 | Android runtime packaging unit tests                                   | 4 passed                                  |
 | Upstream package tooling tests                                         | 28 passed                                 |
 | App-server protocol tests                                              | 313 passed, 1 skipped                     |
