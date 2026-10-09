@@ -15,9 +15,14 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: android-release-assets-${{ inputs.version }}
+  cancel-in-progress: false
+
 jobs:
   upload:
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     permissions:
       contents: write
     env:
@@ -35,7 +40,20 @@ jobs:
           set -euo pipefail
           [[ "$PACKAGE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-android\.[0-9]+$ ]]
           [[ "$EXPECTED_SHA256" =~ ^[0-9a-f]{64}$ ]]
-          npm pack --ignore-scripts "codex-android@$PACKAGE_VERSION"
+          # Newly approved stages can have a cached CDN 404 for five minutes.
+          # Retry on the runner, without AI polling or local package transfers.
+          downloaded=0
+          for attempt in {1..7}; do
+            if npm pack --ignore-scripts "codex-android@$PACKAGE_VERSION"; then
+              downloaded=1
+              break
+            fi
+            if (( attempt < 7 )); then
+              echo "Registry download not ready; retrying in 60 seconds ($attempt/7)."
+              sleep 60
+            fi
+          done
+          [[ "$downloaded" == 1 ]]
           archive="codex-android-$PACKAGE_VERSION.tgz"
           printf '%s  %s\n' "$EXPECTED_SHA256" "$archive" > "$archive.sha256"
           sha256sum -c "$archive.sha256"

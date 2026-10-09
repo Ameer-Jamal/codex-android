@@ -126,7 +126,7 @@ After approval, create a GitHub prerelease for that version until device accepta
 is complete. Mirror the exact public registry package and checksum to the release.
 For slow upload connections, create the GitHub prerelease first, then manually
 dispatch `android-release-assets.yml` with the published npm version and the
-local tarball's SHA-256. It downloads the public registry package, verifies the
+verified cloud build's SHA-256. It downloads the public registry package, verifies the
 supplied checksum, and attaches that identical package and checksum to the
 existing release. It never publishes to npm or receives npm credentials.
 Desktop regression workflows remain available for manual upstream audits;
@@ -146,3 +146,58 @@ For maintainer testing of shared-server commands or explicit remote endpoints,
 `CODEX_ANDROID_USE_DAEMON=1 codex ...` leaves native arguments unchanged. This is
 an experimental opt-in, not a supported Android daemon workflow. Stop live daemons
 before resetting their settings directories.
+
+## Release control without AI
+
+No AI scheduler is needed. GitHub starts Android CI on every main-branch push.
+Use the Actions page or the small control script below to run release steps.
+The script needs Bash, GitHub CLI (`gh auth login`), Node/npm and repository access.
+It transfers only commands, metadata and logs locally; packages stay on runners.
+
+```sh
+bash android/release.sh status
+bash android/release.sh build
+bash android/release.sh watch BUILD_RUN_ID
+bash android/release.sh stage BUILD_RUN_ID
+bash android/release.sh watch STAGING_RUN_ID
+bash android/release.sh inspect STAGING_RUN_ID
+```
+
+Each dispatch prints its GitHub run URL. Copy the numeric run ID from that URL.
+Stage only once, after the build succeeds. The staging workflow requires the
+build to match main exactly; pushing another commit before staging requires a
+new successful build. `inspect` shows the cloud package checksum and npm stage
+ID. Never stage an already staged version again.
+
+Review the stage, then log in if needed and approve through npm's browser:
+
+```sh
+bash android/release.sh login
+bash android/release.sh approve STAGE_ID
+```
+
+The `approve` command displays npm's stage metadata before requesting browser
+approval. Keep 2FA enabled. This human account approval cannot be replaced by a
+scheduled job with the current stage-only trust configuration. Don't paste tokens
+or recovery codes into scripts or chat.
+
+After publication, use the version, SHA-256 and source commit from the successful
+cloud build, along with a saved user-facing release notes file:
+
+```sh
+bash android/release.sh mirror VERSION SHA256 BUILT_COMMIT NOTES_FILE
+bash android/release.sh watch MIRROR_RUN_ID
+bash android/release.sh status
+```
+
+`mirror` creates a GitHub prerelease if it does not already exist and dispatches
+the cloud asset workflow. That workflow downloads from the public npm registry,
+verifies the supplied checksum and attaches the identical archive and sidecar.
+It retries temporary download failures for up to six minutes and queues duplicate
+runs instead of running simultaneous uploads. A checksum mismatch fails without
+uploading. A successful mirror establishes that the normal registry download
+works. Check the green run and release assets before announcing availability.
+
+`watch` uses GitHub CLI's own polling and exits nonzero on a failed run. You can
+close it and check `status` later, or simply enable GitHub workflow notifications.
+No recurring AI follow-up is required. Never automate passkey prompts while away.

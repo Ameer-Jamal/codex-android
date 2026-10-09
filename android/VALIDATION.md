@@ -79,8 +79,23 @@ leaves arguments unchanged for testing shared-server commands.
 Node tests (24, including nested cases) and packaging tests (4) passed locally.
 Coverage includes default launch, resume, fork, prompt delimiters, explicit
 `--no-daemon`, login and daemon opt-in. Native host CLI help parsing confirmed
-`--no-daemon` is accepted with login and exec. This revision is pending cloud
-build/publication and physical-device acceptance.
+`--no-daemon` is accepted with login and exec.
+
+On October 9, 2026, npm published `codex-android@0.160.0-android.4` as `latest`
+after browser approval. Public registry metadata confirms the updated README,
+Android ARM64 target, `codex` command and SHA-1
+`7b78ac94924c151268a5e63608e073cbdd120539`.
+
+The [full Linux Android build](https://github.com/Ameer-Jamal/codex-android/actions/runs/37830989571)
+passed security, checks and native compilation for source
+`bf395a4d934c66016a2db43da7d26b47b882d67b`. The
+[trusted staging workflow](https://github.com/Ameer-Jamal/codex-android/actions/runs/37838547298)
+verified the package against its source and uploaded it through npm OIDC. Its
+SHA-256 is
+`e449ebf668f375542ab14d1c31beb8452b32d7ba0674b4c0694b7e673a6770ec`.
+
+Physical-device acceptance of the default launcher remains pending. This revision
+avoids the daemon; it does not repair shared-socket recovery.
 
 ## Completed checks
 
