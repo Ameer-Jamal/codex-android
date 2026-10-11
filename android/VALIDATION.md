@@ -271,3 +271,24 @@ approvals, interactive terminal rendering, resume content, upgrade migration,
 network recovery or Android/OEM background behavior. Physical-device acceptance
 and the five retained regression failures remain unresolved. No package version,
 publication state or native Rust source was changed by this testing work.
+
+## Unattended candidate acceptance — 2026-10-10
+
+The final one-command runner passed from a stopped dedicated emulator with a
+clean Termux install and npm 12.2.0. It tested the complete cloud-built Android.4
+archive before publication simulation through a temporary loopback registry;
+its SHA-256 remained
+`e449ebf668f375542ab14d1c31beb8452b32d7ba0674b4c0694b7e673a6770ec`.
+No manual readiness prompt, account login or model request was used.
+
+Automatic emulator startup, Termux bootstrap, missing dependencies, exact package
+version/PATH, private home creation, native help/configuration checks, repeated
+startup and uninstall/reinstall settings preservation all passed. The runner
+saved `0.160.0-android.4-1791688022198341000.txt` externally in the emulator reports
+directory with `SUITE_EXIT=0`, removed the test files/local registry connection,
+and shut down the emulator it started. Twenty-two host Python tests passed,
+including candidate identity and identical archive delivery checks.
+
+This is wrapper and installation acceptance on an emulator. Authenticated agent
+execution, interactive sessions, actual upgrade migration and physical Android
+lifecycle acceptance remain pending; the five retained regressions are unchanged.

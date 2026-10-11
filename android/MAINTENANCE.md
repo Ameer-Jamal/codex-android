@@ -233,47 +233,58 @@ individual dependencies, not the Codex source baseline. Review and port a chosen
 upstream release, update its provenance, run Android validation, and publish a new
 Android package revision before users receive that update.
 
-## Local Android emulator tests
+## Unattended Android emulator tests
 
-The macOS runner uses a dedicated ARM64 AVD named `Codex_Android_Test_API34`.
-It refuses physical devices and all other AVD names before installing anything.
-Create the device using the installed Android SDK (adjust SDK/emulator paths for
-other machines; this Mac currently stores the emulator in `emulator-2`):
+On this Mac, Android Studio's SDK and Android 14 Google Play ARM64 system image
+are already installed. From the repository root, run:
 
 ```sh
-printf 'no\n' | ~/Library/Android/sdk/cmdline-tools/latest/bin/avdmanager create avd \
-  --name Codex_Android_Test_API34 \
-  --package 'system-images;android-34;google_apis_playstore;arm64-v8a' --device pixel
-~/Library/Android/sdk/emulator-2/emulator -avd Codex_Android_Test_API34 \
-  -port 5580 -memory 4096 -no-snapshot -no-audio -no-boot-anim
+python3 android/emulator-test.py 0.160.0-android.4
 ```
 
-Download the official ARM64 Termux APK and verify its SHA-256 against the same
-release's published checksum file. Then, from the repository root:
+The runner creates/starts the dedicated `Codex_Android_Test_API34` AVD if needed,
+uses 4 GB RAM, resets Termux for a clean installation, downloads a pinned official
+ARM64 Termux v0.118.3 APK when absent, verifies its checksum, and waits for bootstrap and a terminal acknowledgement
+automatically. Test files use the disposable app’s private storage.
+It then installs Node.js/npm, tests the exact release, and writes a pass/fail report
+under `~/.codex/codex-android-release/emulator/reports/`. No manual prompt, account
+login or model request is required. npm 12.2.0 is the default; use
+`--npm-version 11.20.0` to test that version too.
+
+To test a built candidate **before npm publication**, supply its tarball:
 
 ```sh
-python3 android/emulator-test.py 0.160.0-android.4 --termux-apk /absolute/path/termux-arm64.apk
+python3 android/emulator-test.py 0.160.0-android.5 --package /absolute/path/codex-android-0.160.0-android.5.tgz
 ```
 
-Wait for Termux's initial bootstrap and its shell prompt, then confirm readiness
-in the host terminal. Subsequent runs can omit the APK and use `--ready` when the
-Termux terminal is already idle at its prompt. Add `--npm-version 12.2.0` to test
-the explicit package-script permission with npm 12 as well. Do not run concurrent tests or use
-this AVD for personal work. The runner injects a command into the foreground
-Termux terminal; it never runs the package directly as Android's ADB shell user.
+Use the complete cloud-built artifact, not the source-only `codex-cli/` directory.
+The runner verifies the candidate name/version, serves its exact bytes through a
+temporary loopback npm registry, and connects the emulator through ADB. This uses
+the normal npm registry install and script-permission path without publishing
+anything. The registry and connection are removed afterward. Separate install
+caches prevent previous test results from hiding installation problems.
+Local testing downloads are authorized separately from the release pipeline's
+requirement to keep builds and publication transfers on GitHub.
 
-The suite installs Node.js and an exact npm release, runs phone checks, tests
-uninstall/reinstall preservation with a non-secret sentinel in a dedicated test
-home, and repeats launcher startup. It grants shared-download storage access to
-Termux in this test AVD for scripts/reports. It makes no model requests and needs
-no account login. This deliberately installs/removes packages inside the test AVD;
-the separate phone script does neither. Reports are saved by default under
-`~/.codex/codex-android-release/emulator/reports/`. Nonzero exit means failure.
+Only this dedicated AVD is accepted. Physical phones and other AVD names are
+rejected before installing/resetting packages. Do not store personal work or login
+data in the test AVD: **default runs uninstall Termux and erase its app data**.
+`--reuse` keeps the test Termux installation for faster runs; it cannot certify
+clean dependency setup. The suite checks first launch, PATH/tools, native CLI and
+configuration loading, and uninstall/reinstall preservation with a non-secret
+sentinel. Tests run through the real Termux terminal, not as ADB's shell user.
 
-Reusing the AVD tests reinstall behavior, not clean dependency setup. For a clean
-run, stop this AVD and use Android Studio's Wipe Data on **this test AVD only**, then
-repeat installation/bootstrap. Do not wipe existing personal virtual devices.
-Local emulator downloads use the host's internet connection; release publication
-and build artifacts still stay on GitHub. Interactive terminal, authenticated
-agent execution, Android/OEM lifecycle behavior and physical-phone acceptance
-remain separate checks.
+The SDK path can be overridden with `--sdk`; both `emulator` and this Mac's
+`emulator-2` directory are supported. Missing SDK tools/system images produce a
+clear setup error instead of silently downloading a new SDK. The runner is for
+macOS/Unix with Python 3.11+, Android SDK and an ARM64 emulator-capable host.
+A supplied `--termux-apk` must be an official debug APK verified by the caller;
+the default download is checksum-pinned automatically.
+
+The runner prevents concurrent runs sharing its report directory, saves partial
+reports on failure, and stops Termux on completion/timeout. An emulator started by
+the runner is shut down afterward unless `--keep-emulator` is passed; an already
+running test emulator stays open. Exit 0 means all automatic checks passed; nonzero
+means setup or tests failed. Authenticated agent execution, interactive terminal,
+upgrade migration, Android/OEM lifecycle and physical-phone acceptance remain
+separate checks.
