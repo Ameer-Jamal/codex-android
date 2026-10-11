@@ -4,11 +4,10 @@ import hashlib
 import subprocess
 import time
 import urllib.request
-import xml.etree.ElementTree as ET
 
 IMAGES = {
     34: "system-images;android-34;google_apis_playstore;arm64-v8a",
-    37: "system-images;android-37.0;google_apis_playstore_ps16k;arm64-v8a",
+    37: "system-images;android-37.0;google_apis_playstore;arm64-v8a",
 }
 TERMUX_SHA256 = "72fdb596045116bf5ba1b5bdf5b26fddb9acc0bd074ad9f2da9eb0ae85e83a4e"
 TERMUX_URL = "https://github.com/termux/termux-app/releases/download/v0.118.3/termux-app_v0.118.3%2Bgithub-debug_arm64-v8a.apk"
@@ -121,7 +120,7 @@ def ensure_emulator(sdk, adb, serial, logs, api=37):
 
 
 def wait_for_boot(adb, serial, process, logs, api):
-    deadline = time.monotonic() + 240
+    deadline = time.monotonic() + 600
     while time.monotonic() < deadline:
         if process and process.poll() is not None:
             raise ValueError(f"Emulator stopped unexpectedly; see {logs}")
@@ -160,9 +159,9 @@ def official_termux(cache):
     return apk
 
 
-def wait_for_termux(adb, serial, remote):
+def wait_for_termux(adb, serial, remote, api=37):
     print("Waiting for Termux bootstrap and terminal readiness...", flush=True)
-    deadline = time.monotonic() + 240
+    deadline = time.monotonic() + 600
     while time.monotonic() < deadline:
         ready = run(
             adb,
@@ -176,28 +175,23 @@ def wait_for_termux(adb, serial, remote):
             check=False,
         )
         if ready.returncode == 0:
-            dump = run(
+            windows = run(
                 adb,
                 serial,
                 "shell",
-                "uiautomator",
-                "dump",
-                f"{remote}/window.xml",
+                "dumpsys",
+                "window",
+                "windows",
                 check=False,
                 timeout=30,
-            )
-            if dump.returncode == 0:
-                xml = run(adb, serial, "shell", "cat", f"{remote}/window.xml").stdout
-                try:
-                    nodes = ET.fromstring(xml).iter("node")
-                    if any(
-                        node.get("resource-id") == "com.termux:id/terminal_view"
-                        and node.get("focused") == "true"
-                        for node in nodes
-                    ):
-                        return
-                except ET.ParseError:
-                    pass
+            ).stdout
+            if any(
+                "mCurrentFocus=" in line
+                and "com.termux" in line
+                and "TermuxActivity" in line
+                for line in windows.splitlines()
+            ):
+                return
         time.sleep(3)
     raise ValueError(
         "Termux bootstrap/terminal readiness timed out; see the emulator window"

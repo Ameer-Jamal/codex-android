@@ -152,7 +152,8 @@ before resetting their settings directories.
 No AI scheduler is needed. GitHub starts Android CI on every main-branch push.
 Use the Actions page or the small control script below to run release steps.
 The script needs Bash, GitHub CLI (`gh auth login`), Node/npm and repository access.
-It transfers only commands, metadata and logs locally; packages stay on runners.
+Build, staging and mirror commands transfer only metadata locally. The optional
+`test` command downloads the candidate for local emulator acceptance.
 
 ```sh
 bash android/release.sh status
@@ -235,15 +236,18 @@ Android package revision before users receive that update.
 
 ## Unattended Android emulator tests
 
-The default is Android 17 / API 37 with the ARM64 Google Play **16 KB page**
-image. Android 17's decimal API metadata needs SDK command-line tools **23+**;
+The default is Android 17 / API 37 with the standard ARM64 Google Play image. Android 17's decimal API metadata needs SDK command-line tools **23+**;
 older tools can silently create an unusable `android-0` device. Update the tools
 and ADB, then install the image using Android Studio's SDK Manager or:
 
 ```sh
 ~/Library/Android/sdk/cmdline-tools/latest/bin/sdkmanager 'cmdline-tools;latest' platform-tools
-~/Library/Android/sdk/cmdline-tools/latest/bin/sdkmanager 'system-images;android-37.0;google_apis_playstore_ps16k;arm64-v8a'
+~/Library/Android/sdk/cmdline-tools/latest/bin/android sdk install 'system-images/android-37.0/google_apis_playstore/arm64-v8a'
 ```
+
+The separate 16 KB Android 17 image currently fails before Codex installation:
+the pinned official Termux APK’s bootstrap second stage exits with code 139.
+The default uses the standard image; 16 KB acceptance remains unresolved.
 
 From the repository root, run:
 
@@ -287,7 +291,9 @@ data in the test AVD: **default runs uninstall Termux and erase its app data**.
 clean dependency setup. The suite checks first launch, PATH/tools, native CLI and
 configuration loading, and uninstall/reinstall preservation with a non-secret
 sentinel. A deterministic local Responses fixture also exercises native shell execution,
-file patching, tool-result round trips and persisted session resume. Its disposable
+file patching, tool-result round trips, persisted session resume, a transient
+response failure without repeating the shell mutation, and the native JavaScript
+helper with code mode explicitly enabled for its fixture. Its disposable
 project explicitly uses full access; it does not certify sandbox enforcement or
 interactive approval prompts. Tests run through the real Termux terminal, not as ADB's shell user.
 
@@ -298,7 +304,7 @@ macOS/Unix with Python 3.11+, Android SDK and an ARM64 emulator-capable host.
 A supplied `--termux-apk` must be an official debug APK verified by the caller;
 the default download is checksum-pinned automatically.
 
-The runner prevents concurrent runs sharing its report directory, saves partial
+The runner prevents concurrent runs sharing the same emulator serial, saves partial
 reports on failure, and stops Termux on completion/timeout. An emulator started by
 the runner is shut down afterward unless `--keep-emulator` is passed; an already
 running test emulator stays open. Exit 0 means all automatic checks passed; nonzero
@@ -316,11 +322,16 @@ so they cannot directly replace this Mac’s accelerated Android emulator.
 
 ## Connect local emulator acceptance to GitHub
 
-After the Android ARM64 build succeeds, copy its numeric run ID from Actions:
+After the Android ARM64 build succeeds, run:
 
 ```sh
-bash android/release.sh test 38002535858
+bash android/release.sh test
 ```
+
+Without a run ID, this selects a successful build of **current main**, and fails
+clearly if that commit has not finished building. An explicit numeric run ID is
+also accepted to reproduce an older build. Package versions always come from
+the candidate, so no manual version substitution is needed.
 
 This command uses your existing `gh` login, verifies the run is a successful
 Android workflow on this repository's main branch, downloads its candidate and

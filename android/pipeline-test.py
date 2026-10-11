@@ -48,7 +48,11 @@ def verify_archive(directory):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("run_id", help="Successful Android ARM64 GitHub run ID")
+    parser.add_argument(
+        "run_id",
+        nargs="?",
+        help="Successful build ID; defaults to a successful build of current main",
+    )
     parser.add_argument("--api", type=int, choices=[34, 37], default=37)
     parser.add_argument("--sdk", type=Path, default=Path.home() / "Library/Android/sdk")
     parser.add_argument(
@@ -57,10 +61,39 @@ def main():
         help="Test without writing a GitHub commit status",
     )
     args = parser.parse_args()
+    if args.run_id is None:
+        head = json.loads(gh("api", f"repos/{REPO}/commits/main"))["sha"]
+        runs = json.loads(
+            gh(
+                "api",
+                f"repos/{REPO}/actions/workflows/android.yml/runs?head_sha={head}&status=success&per_page=1",
+            )
+        )["workflow_runs"]
+        if not runs:
+            raise ValueError(
+                "Current main has no successful Android build yet; wait for its build before testing"
+            )
+        args.run_id = str(runs[0]["id"])
     if not args.run_id.isdigit():
         parser.error("Run ID must contain digits only")
     build = json.loads(gh("api", f"repos/{REPO}/actions/runs/{args.run_id}"))
     validate_build(build)
+    harness_source = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=Path(__file__).resolve().parent,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    harness_dirty = bool(
+        subprocess.run(
+            ["git", "status", "--porcelain", "--", "android"],
+            cwd=Path(__file__).resolve().parent.parent,
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+    )
     context = f"android/emulator-api{args.api}"
     endpoint = f"repos/{REPO}/statuses/{build['head_sha']}"
 
@@ -119,13 +152,8 @@ def main():
             record = {
                 "build_run": args.run_id,
                 "source": build["head_sha"],
-                "harness_source": subprocess.run(
-                    ["git", "rev-parse", "HEAD"],
-                    cwd=Path(__file__).resolve().parent,
-                    check=True,
-                    capture_output=True,
-                    text=True,
-                ).stdout.strip(),
+                "harness_source": harness_source,
+                "harness_dirty": harness_dirty,
                 "sha256": digest,
                 "api": args.api,
                 "exit_code": result.returncode,

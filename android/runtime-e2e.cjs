@@ -42,6 +42,20 @@ async function main() {
       content: [{ type: "output_text", text: "ANDROID_RESUME_COMPLETE" }],
     },
   ];
+  tools.push(
+    {
+      type: "custom_tool_call",
+      call_id: "js-test",
+      name: "exec",
+      input: 'console.log("ANDROID_JS_RUNTIME_OK");',
+    },
+    {
+      type: "message",
+      role: "assistant",
+      id: "js-done",
+      content: [{ type: "output_text", text: "ANDROID_JS_COMPLETE" }],
+    },
+  );
   const server = http.createServer(async (req, res) => {
     if (!req.url.endsWith("/responses")) {
       res.writeHead(404).end();
@@ -94,7 +108,7 @@ async function main() {
     "-c",
     "analytics.enabled=false",
   ];
-  async function invoke(args) {
+  async function invoke(args, extra = []) {
     // Full access is explicit ONLY for this disposable fixture project. This does
     // not change launcher defaults or claim Android sandbox enforcement coverage.
     const child = spawn(
@@ -106,6 +120,7 @@ async function main() {
         "-s",
         "danger-full-access",
         ...config,
+        ...extra,
         ...args,
       ],
       {
@@ -186,10 +201,25 @@ async function main() {
       JSON.stringify(requests[3].input).includes("ANDROID_E2E_COMPLETE"),
       "prior response missing from resumed context",
     );
-    assert.equal(requests.length, 4);
+    const javascript = await invoke(
+      ["Android JavaScript fixture turn"],
+      ["-c", "features.code_mode=true"],
+    );
+    assert(
+      javascript.some((event) => event.item?.text === "ANDROID_JS_COMPLETE"),
+    );
+    const jsResult = requests[5].input.find(
+      (item) =>
+        item.call_id === "js-test" && item.type === "custom_tool_call_output",
+    );
+    assert(
+      jsResult && JSON.stringify(jsResult).includes("ANDROID_JS_RUNTIME_OK"),
+      "native JavaScript helper did not execute",
+    );
+    assert.equal(requests.length, 6);
     assert.equal(transientInjected, true);
     console.log(
-      "PASS: native exec, shell, file patch, tool-result round trips, persisted session, resume and transient network retry",
+      "PASS: native exec, shell, file patch, tool-result round trips, persisted session, resume, native JavaScript helper and transient network retry",
     );
   } finally {
     await new Promise((resolve) => server.close(resolve));

@@ -8,7 +8,7 @@ Usage: bash android/release.sh COMMAND [ARGS]
   status                           Show recent CI, staging, mirrors and npm latest
   build                            Start an Android build on main
   watch RUN_ID                     Wait for a GitHub run (no AI needed)
-  test BUILD_RUN_ID [--api 34]      Download/test a cloud candidate on this Mac
+  test [BUILD_RUN_ID] [--api 34]      Download/test a cloud candidate on this Mac
   inspect STAGING_RUN_ID            Show package checksum and npm stage ID
   stage BUILD_RUN_ID               Stage an exact, successful main build on GitHub
   login                            Sign into npm using its official browser flow
@@ -40,8 +40,6 @@ case "$command" in
     gh run watch "$1" --repo "$repo" --interval 30 --exit-status
     ;;
   test)
-    [[ $# -ge 1 ]] || fail 'test requires BUILD_RUN_ID'
-    run_id "$1"
     exec python3 "$(dirname "${BASH_SOURCE[0]}")/pipeline-test.py" "$@"
     ;;
   inspect)

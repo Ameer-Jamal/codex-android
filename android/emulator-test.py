@@ -52,7 +52,7 @@ def execute(args, adb):
             "-n",
             "com.termux/.app.TermuxActivity",
         )
-        wait_for_termux(adb, args.serial, staging)
+        wait_for_termux(adb, args.serial, staging, args.api)
         run(adb, args.serial, "shell", "run-as", "com.termux", "mkdir", "-p", remote)
         # Copy through the debug app UID; Android shared-storage FUSE blocks ADB
         # writes on some repeat runs. Tests still execute in the Termux terminal.

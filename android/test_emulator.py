@@ -28,7 +28,7 @@ class EmulatorGuardTests(unittest.TestCase):
             'print(os.environ.get("EMU_NAME", "Pixel_API_34"))\n'
         )
         adb.chmod(0o755)
-        self.env = dict(os.environ, EMU_CALLS=str(self.log))
+        self.env = dict(os.environ, EMU_CALLS=str(self.log), HOME=str(self.root))
 
     def invoke(self, *args):
         return subprocess.run(
@@ -113,11 +113,11 @@ class EmulatorSetupTests(unittest.TestCase):
                 # First bootstrap check is not ready; the next is ready.
                 code = 1 if len(calls) == 1 else 0
                 return subprocess.CompletedProcess(args, code, "", "")
-            if "cat" in args:
+            if "dumpsys" in args:
                 return subprocess.CompletedProcess(
                     args,
                     0,
-                    '<hierarchy><node resource-id="com.termux:id/terminal_view" focused="true" /></hierarchy>',
+                    "mCurrentFocus=Window{123 u0 com.termux/.app.TermuxActivity}",
                     "",
                 )
             return subprocess.CompletedProcess(args, 0, "", "")
