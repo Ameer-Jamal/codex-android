@@ -22,7 +22,7 @@ getprop ro.build.version.release
 printf 'API: '
 getprop ro.build.version.sdk
 printf 'Page size: '
-getconf PAGESIZE
+/system/bin/getconf PAGESIZE
 # Bootstrap has finished before the host injects this command.
 apt-get update
 apt-get install -y nodejs-lts
