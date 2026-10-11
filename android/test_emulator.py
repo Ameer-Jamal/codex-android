@@ -29,7 +29,15 @@ class EmulatorGuardTests(unittest.TestCase):
 
     def invoke(self, *args):
         return subprocess.run(
-            [sys.executable, str(SCRIPT), *args, "--sdk", str(self.root)],
+            [
+                sys.executable,
+                str(SCRIPT),
+                *args,
+                "--sdk",
+                str(self.root),
+                "--reports",
+                str(self.root / "reports"),
+            ],
             env=self.env,
             capture_output=True,
             text=True,
@@ -43,9 +51,10 @@ class EmulatorGuardTests(unittest.TestCase):
 
     def test_other_avd_is_rejected_before_mutation(self):
         result = self.invoke("0.160.0-android.4")
-        self.assertEqual(result.returncode, 2)
+        self.assertEqual(result.returncode, 1)
         self.assertEqual(
-            self.log.read_text().splitlines(), ["-s emulator-5580 emu avd name"]
+            self.log.read_text().splitlines(),
+            ["-s emulator-5580 get-state", "-s emulator-5580 emu avd name"],
         )
 
     def test_invalid_npm_version_is_rejected_without_adb_calls(self):
@@ -57,6 +66,51 @@ class EmulatorGuardTests(unittest.TestCase):
         result = self.invoke("latest;bad")
         self.assertEqual(result.returncode, 2)
         self.assertFalse(self.log.exists())
+
+
+class EmulatorSetupTests(unittest.TestCase):
+    def test_cached_apk_checksum_mismatch_is_rejected_without_download(self):
+        from unittest.mock import patch
+
+        from emulator_support import official_termux
+
+        with tempfile.TemporaryDirectory() as scratch:
+            cache = Path(scratch)
+            (cache / "termux-arm64.apk").write_bytes(b"tampered APK")
+            with patch("emulator_support.urllib.request.urlopen") as download:
+                with self.assertRaisesRegex(ValueError, "checksum mismatch"):
+                    official_termux(cache)
+                download.assert_not_called()
+
+    def test_bootstrap_waits_for_a_focused_termux_terminal(self):
+        from unittest.mock import patch
+
+        from emulator_support import wait_for_termux
+
+        calls = []
+
+        def fake_run(adb, serial, *args, **kwargs):
+            calls.append(args)
+            if "run-as" in args:
+                # First bootstrap check is not ready; the next is ready.
+                code = 1 if len(calls) == 1 else 0
+                return subprocess.CompletedProcess(args, code, "", "")
+            if "cat" in args:
+                return subprocess.CompletedProcess(
+                    args,
+                    0,
+                    '<hierarchy><node resource-id="com.termux:id/terminal_view" focused="true" /></hierarchy>',
+                    "",
+                )
+            return subprocess.CompletedProcess(args, 0, "", "")
+
+        with (
+            patch("emulator_support.run", side_effect=fake_run),
+            patch("emulator_support.time.sleep") as sleep,
+        ):
+            wait_for_termux("adb", "emulator-5580", "/report")
+            sleep.assert_called_once_with(3)
+        self.assertEqual(sum("run-as" in call for call in calls), 2)
 
 
 if __name__ == "__main__":

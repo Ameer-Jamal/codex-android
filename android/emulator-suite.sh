@@ -3,6 +3,10 @@
 set -euo pipefail
 version=$1
 report_dir=$2
+registry_args=()
+if [[ -n ${4:-} ]]; then
+  registry_args=("--registry=$4")
+fi
 exec >"$report_dir/report.txt" 2>&1
 finish() {
   local result=$?
@@ -25,7 +29,7 @@ fi
 npm --version
 # This AVD is exclusively for package tests, not a user's environment.
 npm uninstall -g codex-android
-npm install -g --allow-scripts=codex-android "codex-android@$version"
+npm install -g --cache "$report_dir/npm-cache-first" --allow-scripts=codex-android "${registry_args[@]}" "codex-android@$version"
 bash "$report_dir/phone-test.sh" "$version"
 
 # Deterministic preservation test; no real account credentials are involved.
@@ -40,7 +44,7 @@ if command -v codex >/dev/null 2>&1; then
   exit 1
 fi
 test "$(cat "$CODEX_HOME/preservation-sentinel")" = preserve-settings
-npm install -g --allow-scripts=codex-android "codex-android@$version"
+npm install -g --cache "$report_dir/npm-cache-reinstall" --allow-scripts=codex-android "${registry_args[@]}" "codex-android@$version"
 test "$(cat "$CODEX_HOME/preservation-sentinel")" = preserve-settings
 bash "$report_dir/phone-test.sh" "$version"
 for iteration in 1 2 3; do

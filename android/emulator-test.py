@@ -1,178 +1,272 @@
-"""Run wrapper checks inside Termux on the dedicated Android test emulator."""
+"""One-command unattended wrapper tests on a dedicated macOS/Unix Android emulator."""
 
 import argparse
+import fcntl
 import re
 import subprocess
 import time
 from pathlib import Path
 
-AVD_NAME = "Codex_Android_Test_API34"
-REMOTE = "/sdcard/Download/codex-android-tests"
-TERMUX = "com.termux"
+from emulator_registry import CandidateRegistry
+from emulator_support import (
+    dispatch,
+    ensure_emulator,
+    official_termux,
+    run,
+    wait_for_termux,
+)
+
+REMOTE = "/data/data/com.termux/files/home/codex-android-tests"
 
 
-def run(adb, serial, *args, timeout=60, check=True):
-    return subprocess.run(
-        [str(adb), "-s", serial, *args],
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        check=check,
+def execute(args, adb):
+    run_id = time.time_ns()
+    report = args.reports / f"{args.version}-{run_id}.txt"
+    remote = f"{REMOTE}-{run_id}"
+    staging = f"/data/local/tmp/codex-android-tests-{run_id}"
+    process = ensure_emulator(
+        args.sdk, adb, args.serial, report.with_suffix(".emulator.log")
     )
+    launched_suite = False
+    registry = None
+    try:
+        if not args.reuse:
+            print("Resetting Termux in the dedicated test AVD...", flush=True)
+            run(adb, args.serial, "uninstall", "com.termux", check=False, timeout=120)
+        packages = run(
+            adb, args.serial, "shell", "pm", "list", "packages", "com.termux"
+        ).stdout
+        if "package:com.termux\n" not in packages:
+            cache = Path.home() / ".codex/codex-android-release/emulator"
+            cache.mkdir(parents=True, exist_ok=True)
+            apk = args.termux_apk or official_termux(cache)
+            run(adb, args.serial, "install", "-r", str(apk.resolve()), timeout=240)
+        run(adb, args.serial, "shell", "mkdir", "-p", staging)
+        run(
+            adb,
+            args.serial,
+            "shell",
+            "am",
+            "start",
+            "-n",
+            "com.termux/.app.TermuxActivity",
+        )
+        wait_for_termux(adb, args.serial, staging)
+        run(adb, args.serial, "shell", "run-as", "com.termux", "mkdir", "-p", remote)
+        # Copy through the debug app UID; Android shared-storage FUSE blocks ADB
+        # writes on some repeat runs. Tests still execute in the Termux terminal.
+        for script in ["phone-test.sh", "emulator-suite.sh"]:
+            run(
+                adb,
+                args.serial,
+                "push",
+                str(Path(__file__).with_name(script)),
+                f"{staging}/{script}",
+            )
+            run(
+                adb,
+                args.serial,
+                "shell",
+                "run-as",
+                "com.termux",
+                "cp",
+                f"{staging}/{script}",
+                f"{remote}/{script}",
+            )
+        # The probe is executed by the actual Termux terminal, not ADB's shell UID.
+        probe = report.with_suffix(".probe.sh")
+        probe.write_text(
+            f"#!/usr/bin/env bash\nprintf 'READY\\n' > {remote}/ready.txt\n"
+        )
+        run(adb, args.serial, "push", str(probe), f"{staging}/ready.sh")
+        run(
+            adb,
+            args.serial,
+            "shell",
+            "run-as",
+            "com.termux",
+            "cp",
+            f"{staging}/ready.sh",
+            f"{remote}/ready.sh",
+        )
+        probe.unlink()
+        source = ""
+        if args.package:
+            registry = CandidateRegistry(args.package.resolve(), args.version)
+            run(
+                adb,
+                args.serial,
+                "reverse",
+                f"tcp:{registry.port}",
+                f"tcp:{registry.port}",
+            )
+            source = f" {registry.url}"
+        dispatch(adb, args.serial, f"bash {remote}/ready.sh")
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            ready = run(
+                adb,
+                args.serial,
+                "shell",
+                "run-as",
+                "com.termux",
+                "cat",
+                f"{remote}/ready.txt",
+                check=False,
+            )
+            if ready.returncode == 0 and ready.stdout.strip() == "READY":
+                break
+            time.sleep(1)
+        else:
+            raise ValueError(
+                "Termux did not acknowledge the readiness probe; refusing to start tests"
+            )
+        dispatch(
+            adb,
+            args.serial,
+            f"bash {remote}/emulator-suite.sh {args.version} {remote} {args.npm_version}{source}",
+        )
+        launched_suite = True
+        print("Running unattended inside Termux; no AI/model requests...", flush=True)
+        deadline = time.monotonic() + args.timeout
+        while time.monotonic() < deadline:
+            status = run(
+                adb,
+                args.serial,
+                "shell",
+                "run-as",
+                "com.termux",
+                "cat",
+                f"{remote}/exit.txt",
+                check=False,
+            )
+            if status.returncode == 0 and re.fullmatch(r"\d+\s*", status.stdout):
+                report.write_text(
+                    run(
+                        adb,
+                        args.serial,
+                        "shell",
+                        "run-as",
+                        "com.termux",
+                        "cat",
+                        f"{remote}/report.txt",
+                    ).stdout
+                )
+                code = int(status.stdout.strip())
+                print(f"{'PASS' if code == 0 else 'FAIL'}: {report}")
+                return 0 if code == 0 else 1
+            time.sleep(5)
+        raise ValueError(f"Suite timed out; partial report: {report}")
+    finally:
+        if registry:
+            run(
+                adb,
+                args.serial,
+                "reverse",
+                "--remove",
+                f"tcp:{registry.port}",
+                check=False,
+            )
+            registry.close()
+        if launched_suite:
+            partial = run(
+                adb,
+                args.serial,
+                "shell",
+                "run-as",
+                "com.termux",
+                "cat",
+                f"{remote}/report.txt",
+                check=False,
+            )
+            if partial.returncode == 0:
+                report.write_text(partial.stdout)
+        run(adb, args.serial, "shell", "rm", "-rf", staging, check=False)
+        run(adb, args.serial, "shell", "am", "force-stop", "com.termux", check=False)
+        run(
+            adb,
+            args.serial,
+            "shell",
+            "run-as",
+            "com.termux",
+            "rm",
+            "-rf",
+            remote,
+            check=False,
+        )
+        if process and not args.keep_emulator:
+            run(adb, args.serial, "emu", "kill", check=False)
+            process.wait(timeout=30)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "version", help="Exact published npm version, e.g. 0.160.0-android.4"
-    )
+    parser.add_argument("version", help="Exact release version, e.g. 0.160.0-android.4")
     parser.add_argument("--serial", default="emulator-5580")
-    parser.add_argument(
-        "--npm-version",
-        default="",
-        help="Optional exact npm version to test, e.g. 12.2.0",
-    )
-    parser.add_argument(
-        "--ready",
-        action="store_true",
-        help="Skip the checkpoint once Termux is bootstrapped and at its prompt",
-    )
+    parser.add_argument("--npm-version", default="12.2.0")
     parser.add_argument("--sdk", type=Path, default=Path.home() / "Library/Android/sdk")
     parser.add_argument(
-        "--termux-apk", type=Path, help="Verified official ARM64 Termux APK"
+        "--termux-apk", type=Path, help="Optional verified official debug APK"
     )
+    parser.add_argument(
+        "--package",
+        type=Path,
+        help="Built candidate .tgz to test before npm publication",
+    )
+    parser.add_argument(
+        "--reuse", action="store_true", help="Reuse Termux instead of clean install"
+    )
+    parser.add_argument("--keep-emulator", action="store_true")
+    parser.add_argument(
+        "--ready", action="store_true", help=argparse.SUPPRESS
+    )  # Backwards compatible; readiness is always automatic.
     parser.add_argument(
         "--reports",
         type=Path,
         default=Path.home() / ".codex/codex-android-release/emulator/reports",
     )
-    parser.add_argument(
-        "--timeout", type=int, default=1800, help="Suite timeout in seconds"
-    )
+    parser.add_argument("--timeout", type=int, default=1800)
     args = parser.parse_args()
     if not re.fullmatch(r"\d+\.\d+\.\d+-android\.\d+", args.version):
         parser.error(
             "Supply an exact Android release version, not latest or shell arguments"
         )
-    if args.npm_version and not re.fullmatch(r"\d+\.\d+\.\d+", args.npm_version):
+    if not re.fullmatch(r"\d+\.\d+\.\d+", args.npm_version):
         parser.error("Supply an exact numeric npm version")
-    if not re.fullmatch(r"emulator-\d+", args.serial):
+    if (
+        not re.fullmatch(r"emulator-\d+", args.serial)
+        or int(args.serial.split("-")[1]) % 2
+    ):
         parser.error(
-            "Only emulator serials are accepted; physical phones are never modified"
+            "Only even-port emulator serials are accepted; physical phones are never modified"
         )
+    if args.timeout < 30:
+        parser.error("Timeout must be at least 30 seconds")
+    for path in [args.package, args.termux_apk]:
+        if path and not path.is_file():
+            parser.error(f"File does not exist: {path}")
     adb = args.sdk / "platform-tools/adb"
     if not adb.is_file():
         parser.error(f"ADB missing: {adb}")
-    name = run(adb, args.serial, "emu", "avd", "name").stdout.splitlines()
-    if not name or name[0].strip() != AVD_NAME:
-        parser.error(f"Refusing to modify any AVD except {AVD_NAME}")
-    if (
-        run(adb, args.serial, "shell", "getprop", "sys.boot_completed").stdout.strip()
-        != "1"
-    ):
-        parser.error("Wait for the emulator to finish booting before running")
-    if args.termux_apk:
-        run(
-            adb,
-            args.serial,
-            "install",
-            "-r",
-            str(args.termux_apk.resolve()),
-            timeout=180,
-        )
-    packages = run(adb, args.serial, "shell", "pm", "list", "packages", TERMUX).stdout
-    if "package:com.termux\n" not in packages:
-        parser.error("Install official Termux with --termux-apk first")
-    run(
-        adb, args.serial, "shell", "am", "start", "-n", "com.termux/.app.TermuxActivity"
-    )
-    print(
-        "Termux opened. On its first launch, wait for bootstrap to finish.", flush=True
-    )
-    # Download storage is the narrow bridge for scripts and non-secret reports.
-    for permission in ["READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE"]:
-        run(
-            adb,
-            args.serial,
-            "shell",
-            "pm",
-            "grant",
-            TERMUX,
-            f"android.permission.{permission}",
-        )
-    result = run(
-        adb,
-        args.serial,
-        "shell",
-        "pm",
-        "grant",
-        TERMUX,
-        "android.permission.POST_NOTIFICATIONS",
-        check=False,
-    )
-    if result.returncode:
-        print("Notification permission unavailable; continuing.", flush=True)
-    run(adb, args.serial, "shell", "mkdir", "-p", REMOTE)
-    run(
-        adb,
-        args.serial,
-        "shell",
-        "rm",
-        "-f",
-        f"{REMOTE}/exit.txt",
-        f"{REMOTE}/exit.tmp",
-        f"{REMOTE}/report.txt",
-    )
-    for script in ["phone-test.sh", "emulator-suite.sh"]:
-        run(
-            adb,
-            args.serial,
-            "push",
-            str(Path(__file__).with_name(script)),
-            f"{REMOTE}/{script}",
-        )
-    # A normal terminal command preserves Termux's real app UID, PATH and startup.
-    # Shell prompt readiness is intentionally a one-time human checkpoint.
-    if not args.ready:
-        input("When Termux shows its $ prompt, press Enter here to start the tests: ")
-    command = f"bash {REMOTE}/emulator-suite.sh {args.version} {REMOTE}"
-    if args.npm_version:
-        command += f" {args.npm_version}"
-    run(adb, args.serial, "shell", "input", "text", command.replace(" ", "%s"))
-    run(adb, args.serial, "shell", "input", "keyevent", "66")
-    print(
-        "Running inside Termux; collecting report (no AI/model requests).", flush=True
-    )
-    deadline = time.monotonic() + args.timeout
-    while time.monotonic() < deadline:
-        status = run(
-            adb, args.serial, "shell", "cat", f"{REMOTE}/exit.txt", check=False
-        )
-        if status.returncode == 0 and re.fullmatch(r"\d+\s*", status.stdout):
-            args.reports.mkdir(parents=True, exist_ok=True)
-            report = (
-                args.reports / f"{args.version}-{time.strftime('%Y%m%d-%H%M%S')}.txt"
-            )
-            run(adb, args.serial, "pull", f"{REMOTE}/report.txt", str(report))
-            code = int(status.stdout.strip())
-            print(f"{'PASS' if code == 0 else 'FAIL'}: report saved to {report}")
-            return 0 if code == 0 else 1
-        time.sleep(5)
     args.reports.mkdir(parents=True, exist_ok=True)
-    report = args.reports / "timeout-report.txt"
-    run(adb, args.serial, "pull", f"{REMOTE}/report.txt", str(report), check=False)
-    print(
-        f"Timed out; inspect Termux and {report}. Tests may still be running; do not rerun concurrently."
-    )
-    return 1
+    with (args.reports / "runner.lock").open("a") as lock:
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            parser.error("An emulator test is already running; wait for its report")
+        return execute(args, adb)
 
 
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
+    except KeyboardInterrupt:
+        print("Interrupted; test processes stopped and any partial report saved.")
+        raise SystemExit(130) from None
     except subprocess.CalledProcessError as error:
-        print(f"ADB failed: {error.stderr.strip()[:2000]}")
+        detail = (error.stderr or error.stdout or str(error)).strip()
+        print(f"FAIL: {detail[:2000]}")
         raise SystemExit(1) from None
-    except subprocess.TimeoutExpired:
-        print("ADB timed out; check the emulator is responsive before retrying.")
+    except (ValueError, OSError, subprocess.SubprocessError) as error:
+        print(f"FAIL: {error}")
         raise SystemExit(1) from None
