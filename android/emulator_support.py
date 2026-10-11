@@ -6,7 +6,10 @@ import time
 import urllib.request
 import xml.etree.ElementTree as ET
 
-AVD_NAME = "Codex_Android_Test_API34"
+IMAGES = {
+    34: "system-images;android-34;google_apis_playstore;arm64-v8a",
+    37: "system-images;android-37.0;google_apis_playstore_ps16k;arm64-v8a",
+}
 TERMUX_SHA256 = "72fdb596045116bf5ba1b5bdf5b26fddb9acc0bd074ad9f2da9eb0ae85e83a4e"
 TERMUX_URL = "https://github.com/termux/termux-app/releases/download/v0.118.3/termux-app_v0.118.3%2Bgithub-debug_arm64-v8a.apk"
 
@@ -21,16 +24,19 @@ def run(adb, serial, *args, timeout=60, check=True):
     )
 
 
-def require_test_avd(adb, serial):
+def require_test_avd(adb, serial, api=37):
+    avd_name = f"Codex_Android_Test_API{api}"
     name = run(adb, serial, "emu", "avd", "name").stdout.splitlines()
-    if not name or name[0].strip() != AVD_NAME:
-        raise ValueError(f"Refusing to modify any AVD except {AVD_NAME}")
+    if not name or name[0].strip() != avd_name:
+        raise ValueError(f"Refusing to modify any AVD except {avd_name}")
 
 
-def ensure_emulator(sdk, adb, serial, logs):
+def ensure_emulator(sdk, adb, serial, logs, api=37):
+    avd_name = f"Codex_Android_Test_API{api}"
+    package = IMAGES[api]
     if run(adb, serial, "get-state", check=False, timeout=15).returncode == 0:
-        require_test_avd(adb, serial)
-        wait_for_boot(adb, serial, None, logs)
+        require_test_avd(adb, serial, api)
+        wait_for_boot(adb, serial, None, logs, api)
         return None
     emulator = next(
         (
@@ -47,13 +53,11 @@ def ensure_emulator(sdk, adb, serial, logs):
     avds = subprocess.run(
         [str(emulator), "-list-avds"], capture_output=True, text=True, check=True
     ).stdout.splitlines()
-    if AVD_NAME not in avds:
-        image = (
-            sdk / "system-images/android-34/google_apis_playstore/arm64-v8a/system.img"
-        )
+    if avd_name not in avds:
+        image = sdk / package.replace(";", "/") / "system.img"
         if not image.is_file():
             raise ValueError(
-                "Install the Android 14 Google Play ARM64 system image in Android Studio's SDK Manager"
+                f"Install {package} through Android Studio SDK Manager or sdkmanager"
             )
         manager = sdk / "cmdline-tools/latest/bin/avdmanager"
         subprocess.run(
@@ -62,9 +66,9 @@ def ensure_emulator(sdk, adb, serial, logs):
                 "create",
                 "avd",
                 "--name",
-                AVD_NAME,
+                avd_name,
                 "--package",
-                "system-images;android-34;google_apis_playstore;arm64-v8a",
+                package,
                 "--device",
                 "pixel",
             ],
@@ -80,7 +84,7 @@ def ensure_emulator(sdk, adb, serial, logs):
             [
                 str(emulator),
                 "-avd",
-                AVD_NAME,
+                avd_name,
                 "-port",
                 serial.split("-")[1],
                 "-memory",
@@ -92,17 +96,17 @@ def ensure_emulator(sdk, adb, serial, logs):
             stdout=output,
             stderr=subprocess.STDOUT,
         )
-    wait_for_boot(adb, serial, process, logs)
+    wait_for_boot(adb, serial, process, logs, api)
     return process
 
 
-def wait_for_boot(adb, serial, process, logs):
+def wait_for_boot(adb, serial, process, logs, api):
     deadline = time.monotonic() + 240
     while time.monotonic() < deadline:
         if process and process.poll() is not None:
             raise ValueError(f"Emulator stopped unexpectedly; see {logs}")
         if run(adb, serial, "get-state", check=False, timeout=15).returncode == 0:
-            require_test_avd(adb, serial)
+            require_test_avd(adb, serial, api)
             if (
                 run(
                     adb, serial, "shell", "getprop", "sys.boot_completed", check=False

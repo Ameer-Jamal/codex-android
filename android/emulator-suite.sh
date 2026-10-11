@@ -19,6 +19,10 @@ export DEBIAN_FRONTEND=noninteractive
 printf 'Android emulator release test: %s\n' "$version"
 uname -m
 getprop ro.build.version.release
+printf 'API: '
+getprop ro.build.version.sdk
+printf 'Page size: '
+getconf PAGESIZE
 # Bootstrap has finished before the host injects this command.
 apt-get update
 apt-get install -y nodejs-lts
@@ -51,4 +55,5 @@ for iteration in 1 2 3; do
   timeout --kill-after=5 30 codex --help >/dev/null
 done
 echo 'PASS: uninstall/reinstall preserves test settings; repeated startup works'
-echo 'No model requests or login performed. Interactive/device lifecycle acceptance remains separate.'
+node "$report_dir/runtime-e2e.cjs"
+echo 'No live model requests or login performed. Interactive/device lifecycle acceptance remains separate.'

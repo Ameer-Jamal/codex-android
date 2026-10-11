@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Small control requests only: builds and package transfers stay on GitHub.
+# Release control requests stay small; emulator tests download candidates locally.
 set -euo pipefail
 repo=Ameer-Jamal/codex-android
 usage() {
@@ -8,13 +8,14 @@ Usage: bash android/release.sh COMMAND [ARGS]
   status                           Show recent CI, staging, mirrors and npm latest
   build                            Start an Android build on main
   watch RUN_ID                     Wait for a GitHub run (no AI needed)
+  test BUILD_RUN_ID [--api 34]      Download/test a cloud candidate on this Mac
   inspect STAGING_RUN_ID            Show package checksum and npm stage ID
   stage BUILD_RUN_ID               Stage an exact, successful main build on GitHub
   login                            Sign into npm using its official browser flow
   approve STAGE_ID                  Inspect and approve an already uploaded stage
   mirror VERSION SHA256 COMMIT NOTES_FILE
                                    Create a prerelease if needed, then mirror on GitHub
-No command uploads or downloads a full package on this computer.
+Only test downloads a package locally; build/stage/mirror transfers stay on GitHub.
 HELP
 }
 fail() { printf '%s\n' "$*" >&2; exit 2; }
@@ -37,6 +38,11 @@ case "$command" in
     [[ $# -eq 1 ]] || fail 'watch requires RUN_ID'
     run_id "$1"
     gh run watch "$1" --repo "$repo" --interval 30 --exit-status
+    ;;
+  test)
+    [[ $# -ge 1 ]] || fail 'test requires BUILD_RUN_ID'
+    run_id "$1"
+    exec python3 "$(dirname "${BASH_SOURCE[0]}")/pipeline-test.py" "$@"
     ;;
   inspect)
     [[ $# -eq 1 ]] || fail 'inspect requires STAGING_RUN_ID'

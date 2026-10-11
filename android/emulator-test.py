@@ -26,7 +26,7 @@ def execute(args, adb):
     remote = f"{REMOTE}-{run_id}"
     staging = f"/data/local/tmp/codex-android-tests-{run_id}"
     process = ensure_emulator(
-        args.sdk, adb, args.serial, report.with_suffix(".emulator.log")
+        args.sdk, adb, args.serial, report.with_suffix(".emulator.log"), args.api
     )
     launched_suite = False
     registry = None
@@ -56,7 +56,7 @@ def execute(args, adb):
         run(adb, args.serial, "shell", "run-as", "com.termux", "mkdir", "-p", remote)
         # Copy through the debug app UID; Android shared-storage FUSE blocks ADB
         # writes on some repeat runs. Tests still execute in the Termux terminal.
-        for script in ["phone-test.sh", "emulator-suite.sh"]:
+        for script in ["phone-test.sh", "emulator-suite.sh", "runtime-e2e.cjs"]:
             run(
                 adb,
                 args.serial,
@@ -128,7 +128,7 @@ def execute(args, adb):
             f"bash {remote}/emulator-suite.sh {args.version} {remote} {args.npm_version}{source}",
         )
         launched_suite = True
-        print("Running unattended inside Termux; no AI/model requests...", flush=True)
+        print("Running unattended inside Termux; no live model requests...", flush=True)
         deadline = time.monotonic() + args.timeout
         while time.monotonic() < deadline:
             status = run(
@@ -208,6 +208,13 @@ def main():
         help="Optional exact version; defaults to candidate version or npm latest",
     )
     parser.add_argument("--serial", default="emulator-5580")
+    parser.add_argument(
+        "--api",
+        type=int,
+        choices=[34, 37],
+        default=37,
+        help="API 37: Android 17, 16 KB pages (default); API 34: Android 14",
+    )
     parser.add_argument("--npm-version", default="12.2.0")
     parser.add_argument("--sdk", type=Path, default=Path.home() / "Library/Android/sdk")
     parser.add_argument(
@@ -258,7 +265,9 @@ def main():
     args.version = resolve_version(args.version, args.package)
     print(f"Testing codex-android@{args.version}", flush=True)
     args.reports.mkdir(parents=True, exist_ok=True)
-    with (args.reports / "runner.lock").open("a") as lock:
+    lock_dir = Path.home() / ".codex/codex-android-release/emulator/locks"
+    lock_dir.mkdir(parents=True, exist_ok=True)
+    with (lock_dir / f"{args.serial}.lock").open("a") as lock:
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:

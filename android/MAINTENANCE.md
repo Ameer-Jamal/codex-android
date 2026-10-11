@@ -235,8 +235,14 @@ Android package revision before users receive that update.
 
 ## Unattended Android emulator tests
 
-On this Mac, Android Studio's SDK and Android 14 Google Play ARM64 system image
-are already installed. From the repository root, run:
+The default is Android 17 / API 37 with the ARM64 Google Play **16 KB page**
+image. Install it once using Android Studio's SDK Manager or:
+
+```sh
+~/Library/Android/sdk/cmdline-tools/latest/bin/sdkmanager 'system-images;android-37.0;google_apis_playstore_ps16k;arm64-v8a'
+```
+
+From the repository root, run:
 
 ```sh
 python3 android/emulator-test.py
@@ -247,13 +253,13 @@ pins that exact version for the whole test. With `--package`, it reads the versi
 from the candidate itself. An explicit version remains available when reproducing
 an older release or checking an expected candidate version.
 
-The runner creates/starts the dedicated `Codex_Android_Test_API34` AVD if needed,
+The runner creates/starts the dedicated `Codex_Android_Test_API37` (or API34 with `--api 34`) AVD if needed,
 uses 4 GB RAM, resets Termux for a clean installation, downloads a pinned official
 ARM64 Termux v0.118.3 APK when absent, verifies its checksum, and waits for bootstrap and a terminal acknowledgement
 automatically. Test files use the disposable app’s private storage.
 It then installs Node.js/npm, tests the exact release, and writes a pass/fail report
 under `~/.codex/codex-android-release/emulator/reports/`. No manual prompt, account
-login or model request is required. npm 12.2.0 is the default; use
+login or live model request is required. npm 12.2.0 is the default; use
 `--npm-version 11.20.0` to test that version too.
 
 To test a built candidate **before npm publication**, supply its tarball:
@@ -271,13 +277,16 @@ caches prevent previous test results from hiding installation problems.
 Local testing downloads are authorized separately from the release pipeline's
 requirement to keep builds and publication transfers on GitHub.
 
-Only this dedicated AVD is accepted. Physical phones and other AVD names are
+Only the dedicated AVD matching the selected API is accepted. Physical phones and other AVD names are
 rejected before installing/resetting packages. Do not store personal work or login
 data in the test AVD: **default runs uninstall Termux and erase its app data**.
 `--reuse` keeps the test Termux installation for faster runs; it cannot certify
 clean dependency setup. The suite checks first launch, PATH/tools, native CLI and
 configuration loading, and uninstall/reinstall preservation with a non-secret
-sentinel. Tests run through the real Termux terminal, not as ADB's shell user.
+sentinel. A deterministic local Responses fixture also exercises native shell execution,
+file patching, tool-result round trips and persisted session resume. Its disposable
+project explicitly uses full access; it does not certify sandbox enforcement or
+interactive approval prompts. Tests run through the real Termux terminal, not as ADB's shell user.
 
 The SDK path can be overridden with `--sdk`; both `emulator` and this Mac's
 `emulator-2` directory are supported. Missing SDK tools/system images produce a
@@ -301,3 +310,32 @@ This Mac can run it as a self-hosted GitHub Actions runner without an additional
 hosting service. Runner registration is separate setup; it is not installed by
 this script. GitHub-hosted ARM64 macOS runners do not support nested virtualization,
 so they cannot directly replace this Mac’s accelerated Android emulator.
+
+## Connect local emulator acceptance to GitHub
+
+After the Android ARM64 build succeeds, copy its numeric run ID from Actions:
+
+```sh
+bash android/release.sh test 38002535858
+```
+
+This command uses your existing `gh` login, verifies the run is a successful
+Android workflow on this repository's main branch, downloads its candidate and
+checks the SHA-256 sidecar. It runs the clean Android 17 suite and posts
+`android/emulator-api37` as pending, success, failure or error on the **built
+commit**, visible alongside its pipeline checks. The exact source, checksum and
+result are saved with the full local reports under
+`~/.codex/codex-android-release/emulator/pipeline-RUN_ID-api37/`. The status links
+to the source build; full emulator logs remain on the Mac.
+
+Use `--api 34` for the older compatibility check; use `--no-status` for read-only
+GitHub access. A successful emulator status is currently a **manual release
+acceptance check**, not enforced by the npm staging workflow. Check both the
+cloud build and emulator status before staging a new release. A failed test does
+not publish anything or alter npm tags.
+
+This pull-based connection needs no continuously listening self-hosted runner,
+paid service or AI schedule. Run it manually before releases. Scheduling the same
+command with a specific new build ID is possible through macOS launchd; avoid
+repeatedly downloading/testing an unchanged build. Your Mac must be awake, have
+the SDK image installed and have an authenticated `gh` session.

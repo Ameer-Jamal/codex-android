@@ -57,6 +57,12 @@ class EmulatorGuardTests(unittest.TestCase):
             ["-s emulator-5580 get-state", "-s emulator-5580 emu avd name"],
         )
 
+    def test_dedicated_avd_for_another_api_is_rejected_before_mutation(self):
+        self.env["EMU_NAME"] = "Codex_Android_Test_API34"
+        result = self.invoke("0.160.0-android.4", "--api", "37")
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(len(self.log.read_text().splitlines()), 2)
+
     def test_invalid_npm_version_is_rejected_without_adb_calls(self):
         result = self.invoke("0.160.0-android.4", "--npm-version", "12;bad")
         self.assertEqual(result.returncode, 2)
