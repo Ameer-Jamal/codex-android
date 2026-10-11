@@ -47,7 +47,7 @@ async function main() {
       type: "custom_tool_call",
       call_id: "js-test",
       name: "exec",
-      input: 'console.log("ANDROID_JS_RUNTIME_OK");',
+      input: 'text("ANDROID_JS_RUNTIME_OK");',
     },
     {
       type: "message",
