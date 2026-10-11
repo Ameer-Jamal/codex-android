@@ -51,6 +51,11 @@ Run `uname -m` in Termux to check your architecture; it should say `aarch64`.
 32-bit devices, x86 Android, proot environments, and APK installation are not
 currently supported. Install Termux and its plugins from the same source.
 
+Devices using 16 KB memory pages still need compatibility testing. The tested
+Termux v0.118.3 failed during its own setup on an Android 17 emulator with 16 KB
+pages, before Codex could be installed. Standard 4 KB emulator checks passed;
+see the [validation record](android/VALIDATION.md) for the tested environments.
+
 ## Using Codex
 
 Start an interactive session with `codex`, or give it a task:
