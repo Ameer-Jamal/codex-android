@@ -42,6 +42,7 @@ def execute(args, adb):
             cache.mkdir(parents=True, exist_ok=True)
             apk = args.termux_apk or official_termux(cache)
             run(adb, args.serial, "install", "-r", str(apk.resolve()), timeout=240)
+        run(adb, args.serial, "logcat", "-c")
         run(adb, args.serial, "shell", "mkdir", "-p", staging)
         run(
             adb,
@@ -159,6 +160,18 @@ def execute(args, adb):
             time.sleep(5)
         raise ValueError(f"Suite timed out; partial report: {report}")
     finally:
+        if not launched_suite:
+            bootstrap = run(
+                adb,
+                args.serial,
+                "logcat",
+                "-d",
+                "-s",
+                "Termux:TermuxInstaller:V",
+                check=False,
+                timeout=30,
+            )
+            report.with_suffix(".bootstrap.log").write_text(bootstrap.stdout)
         if registry:
             run(
                 adb,

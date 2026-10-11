@@ -192,6 +192,20 @@ def wait_for_termux(adb, serial, remote, api=37):
                 for line in windows.splitlines()
             ):
                 return
+        errors = run(
+            adb,
+            serial,
+            "logcat",
+            "-d",
+            "-s",
+            "Termux:TermuxInstaller:E",
+            check=False,
+            timeout=30,
+        ).stdout
+        if "Bootstrap Error:" in errors:
+            raise ValueError(
+                "Termux bootstrap failed before Codex installation: " + errors[-2000:]
+            )
         time.sleep(3)
     raise ValueError(
         "Termux bootstrap/terminal readiness timed out; see the emulator window"
