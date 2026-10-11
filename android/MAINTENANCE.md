@@ -236,9 +236,12 @@ Android package revision before users receive that update.
 ## Unattended Android emulator tests
 
 The default is Android 17 / API 37 with the ARM64 Google Play **16 KB page**
-image. Install it once using Android Studio's SDK Manager or:
+image. Android 17's decimal API metadata needs SDK command-line tools **23+**;
+older tools can silently create an unusable `android-0` device. Update the tools
+and ADB, then install the image using Android Studio's SDK Manager or:
 
 ```sh
+~/Library/Android/sdk/cmdline-tools/latest/bin/sdkmanager 'cmdline-tools;latest' platform-tools
 ~/Library/Android/sdk/cmdline-tools/latest/bin/sdkmanager 'system-images;android-37.0;google_apis_playstore_ps16k;arm64-v8a'
 ```
 

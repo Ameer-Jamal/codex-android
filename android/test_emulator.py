@@ -16,6 +16,9 @@ class EmulatorGuardTests(unittest.TestCase):
         self.addCleanup(self.scratch.cleanup)
         self.root = Path(self.scratch.name)
         (self.root / "platform-tools").mkdir()
+        tools = self.root / "cmdline-tools/latest"
+        tools.mkdir(parents=True)
+        (tools / "source.properties").write_text("Pkg.Revision=23.0\n")
         self.log = self.root / "calls"
         adb = self.root / "platform-tools/adb"
         adb.write_text(
@@ -43,6 +46,15 @@ class EmulatorGuardTests(unittest.TestCase):
             text=True,
             check=False,
         )
+
+    def test_old_sdk_tools_are_rejected_before_android_17_launch(self):
+        (self.root / "cmdline-tools/latest/source.properties").write_text(
+            "Pkg.Revision=12.0\n"
+        )
+        result = self.invoke("0.160.0-android.4")
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("tools 23+", result.stdout)
+        self.assertFalse(self.log.exists())
 
     def test_physical_phone_is_rejected_without_adb_calls(self):
         result = self.invoke("0.160.0-android.4", "--serial", "phone123")

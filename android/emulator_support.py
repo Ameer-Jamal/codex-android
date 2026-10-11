@@ -34,6 +34,21 @@ def require_test_avd(adb, serial, api=37):
 def ensure_emulator(sdk, adb, serial, logs, api=37):
     avd_name = f"Codex_Android_Test_API{api}"
     package = IMAGES[api]
+    manager = sdk / "cmdline-tools/latest/bin/avdmanager"
+    if api == 37:
+        properties = (sdk / "cmdline-tools/latest/source.properties").read_text()
+        revision = next(
+            (
+                line.split("=", 1)[1].strip()
+                for line in properties.splitlines()
+                if line.startswith("Pkg.Revision=")
+            ),
+            "0",
+        )
+        if int(revision.split(".")[0]) < 23:
+            raise ValueError(
+                "Android 17 requires SDK command-line tools 23+; update them in SDK Manager before creating its AVD"
+            )
     if run(adb, serial, "get-state", check=False, timeout=15).returncode == 0:
         require_test_avd(adb, serial, api)
         wait_for_boot(adb, serial, None, logs, api)
@@ -59,7 +74,6 @@ def ensure_emulator(sdk, adb, serial, logs, api=37):
             raise ValueError(
                 f"Install {package} through Android Studio SDK Manager or sdkmanager"
             )
-        manager = sdk / "cmdline-tools/latest/bin/avdmanager"
         subprocess.run(
             [
                 str(manager),
@@ -96,7 +110,13 @@ def ensure_emulator(sdk, adb, serial, logs, api=37):
             stdout=output,
             stderr=subprocess.STDOUT,
         )
-    wait_for_boot(adb, serial, process, logs, api)
+    try:
+        wait_for_boot(adb, serial, process, logs, api)
+    except BaseException:
+        if process.poll() is None:
+            process.terminate()
+        process.wait(timeout=30)
+        raise
     return process
 
 
