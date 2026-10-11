@@ -87,6 +87,37 @@ class EmulatorGuardTests(unittest.TestCase):
 
 
 class EmulatorSetupTests(unittest.TestCase):
+    def test_diagnostic_timeout_still_stops_owned_emulator(self):
+        import importlib.util
+        from types import SimpleNamespace
+        from unittest.mock import Mock, patch
+
+        spec = importlib.util.spec_from_file_location("emulator_driver", SCRIPT)
+        driver = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(driver)
+        process = Mock()
+        with tempfile.TemporaryDirectory() as scratch:
+            args = SimpleNamespace(
+                reports=Path(scratch),
+                version="0.160.0-android.4",
+                sdk=Path(scratch),
+                serial="emulator-5580",
+                api=37,
+                headless=True,
+                reuse=False,
+                keep_emulator=False,
+            )
+            with (
+                patch.object(driver, "ensure_emulator", return_value=process),
+                patch.object(
+                    driver, "run", side_effect=subprocess.TimeoutExpired("adb", 15)
+                ),
+                self.assertRaises(subprocess.TimeoutExpired),
+            ):
+                driver.execute(args, "adb")
+        process.terminate.assert_called_once_with()
+        process.wait.assert_called_once_with(timeout=30)
+
     def test_cached_apk_checksum_mismatch_is_rejected_without_download(self):
         from unittest.mock import patch
 

@@ -292,3 +292,47 @@ including candidate identity and identical archive delivery checks.
 This is wrapper and installation acceptance on an emulator. Authenticated agent
 execution, interactive sessions, actual upgrade migration and physical Android
 lifecycle acceptance remain pending; the five retained regressions are unchanged.
+
+## Android 17 native end-to-end acceptance — 2026-10-10
+
+The Mac-driven pipeline command passed on a clean official Termux v0.118.3
+installation in the dedicated Android 17/API 37 ARM64 Google Play emulator,
+using the standard **4 KB page-size image**. The SDK command-line tools were
+updated to 23.0 and the emulator to 37.2.12. The final run used a headless
+emulator and explicit SwiftShader rendering; earlier automatic-renderer runs
+became unresponsive during bootstrap. The precise cause is not established.
+
+The tested candidate came from successful
+[Android build 38002535858](https://github.com/Ameer-Jamal/codex-android/actions/runs/38002535858),
+source `ea2b81e2dd15e6218bba639fdc585d7b79f3f023`. Its version was read from the
+archive as `0.160.0-android.4`, and its verified SHA-256 was
+`b3c636636795d1d1ed92e59b630c00eb278deb5226aed16bd6de157c6bb174ea`.
+This is a later cloud candidate, not a claim of byte identity with the previously
+published npm tarball. The harness source was
+`fae3320e1135a3d4a1d7879f5c24c7d3e609f531`, with no uncommitted harness changes
+at invocation. GitHub recorded `android/emulator-api37=success` on the built source.
+
+The report `0.160.0-android.4-1791692901861855000.txt` and `result.json` are saved
+under `~/.codex/codex-android-release/emulator/pipeline-38002535858-api37/`.
+It records `SUITE_EXIT=0`, Node 24.18.0 and npm 12.2.0. Checks covered clean
+installation and automatic missing dependencies, first/private-home creation,
+CLI/configuration loading, repeated startup, uninstall/reinstall preserving a
+non-secret settings sentinel, native shell execution and file patching,
+serialized tool results, persisted session resume, the native JavaScript helper
+with code mode explicitly enabled, and retrying one injected HTTP 503 without
+repeating the shell mutation. A local deterministic Responses fixture was used;
+there was no account login or live model request.
+
+Thirty-four host Python tests and 24 Node launcher/installer tests passed.
+The expanded native fixture also passed against the macOS executable, and the
+prior Android 14 run passed shell, patch and resume checks. Prettier, Python lint,
+shell syntax checks and required `just fmt` passed.
+
+The separate Android 17 **16 KB image did not pass**: the pinned Termux APK
+showed its compatibility-mode warning, then its bootstrap second stage exited
+with code 139 before Codex installation. This is an observed Termux environment
+blocker, not proof that Codex works or fails on that page size. Strict 16 KB
+acceptance remains unresolved. Physical-phone login, interactive approval
+accept/deny, terminal controls, Android/OEM lifecycle and actual upgrade migration
+remain pending. The five retained test failures listed above remain unresolved;
+no assertion or snapshot was weakened to declare stability.
