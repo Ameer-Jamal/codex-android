@@ -181,7 +181,6 @@ def wait_for_termux(adb, serial, remote, api=37):
                 "shell",
                 "dumpsys",
                 "window",
-                "windows",
                 check=False,
                 timeout=30,
             ).stdout
@@ -197,11 +196,14 @@ def wait_for_termux(adb, serial, remote, api=37):
             serial,
             "logcat",
             "-d",
-            "-s",
-            "Termux:TermuxInstaller:E",
+            "-t",
+            "5000",
             check=False,
             timeout=30,
         ).stdout
+        errors = "\n".join(
+            line for line in errors.splitlines() if "Termux:TermuxInstaller" in line
+        )
         if "Bootstrap Error:" in errors:
             raise ValueError(
                 "Termux bootstrap failed before Codex installation: " + errors[-2000:]

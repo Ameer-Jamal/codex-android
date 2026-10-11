@@ -166,12 +166,18 @@ def execute(args, adb):
                 args.serial,
                 "logcat",
                 "-d",
-                "-s",
-                "Termux:TermuxInstaller:V",
+                "-t",
+                "5000",
                 check=False,
                 timeout=30,
             )
-            report.with_suffix(".bootstrap.log").write_text(bootstrap.stdout)
+            report.with_suffix(".bootstrap.log").write_text(
+                "\n".join(
+                    line
+                    for line in bootstrap.stdout.splitlines()
+                    if "Termux:TermuxInstaller" in line
+                )
+            )
         if registry:
             run(
                 adb,
@@ -226,7 +232,7 @@ def main():
         type=int,
         choices=[34, 37],
         default=37,
-        help="API 37: Android 17, 16 KB pages (default); API 34: Android 14",
+        help="API 37: Android 17, standard page-size image (default); API 34: Android 14",
     )
     parser.add_argument("--npm-version", default="12.2.0")
     parser.add_argument("--sdk", type=Path, default=Path.home() / "Library/Android/sdk")

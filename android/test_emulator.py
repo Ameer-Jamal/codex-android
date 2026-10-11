@@ -100,6 +100,22 @@ class EmulatorSetupTests(unittest.TestCase):
                     official_termux(cache)
                 download.assert_not_called()
 
+    def test_bootstrap_error_stops_before_terminal_dispatch(self):
+        from unittest.mock import patch
+
+        from emulator_support import wait_for_termux
+
+        with patch("emulator_support.run") as run:
+            run.side_effect = [
+                subprocess.CompletedProcess([], 1, ""),
+                subprocess.CompletedProcess(
+                    [], 0, "Termux:TermuxInstaller: Bootstrap Error: Exit Code: 139"
+                ),
+            ]
+            with self.assertRaisesRegex(ValueError, "before Codex installation"):
+                wait_for_termux("adb", "emulator-5580", "/report")
+        self.assertEqual(run.call_count, 2)
+
     def test_bootstrap_waits_for_a_focused_termux_terminal(self):
         from unittest.mock import patch
 
