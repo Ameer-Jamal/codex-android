@@ -261,7 +261,7 @@ from the candidate itself. An explicit version remains available when reproducin
 an older release or checking an expected candidate version.
 
 The runner creates/starts the dedicated `Codex_Android_Test_API37` (or API34 with `--api 34`) AVD if needed,
-uses 4 GB RAM, resets Termux for a clean installation, downloads a pinned official
+uses 4 GB RAM and a fixed SwiftShader renderer on API 37, resets Termux for a clean installation, downloads a pinned official
 ARM64 Termux v0.118.3 APK when absent, verifies its checksum, and waits for bootstrap and a terminal acknowledgement
 automatically. Test files use the disposable app’s private storage.
 It then installs Node.js/npm, tests the exact release, and writes a pass/fail report
@@ -297,6 +297,7 @@ helper with code mode explicitly enabled for its fixture. Its disposable
 project explicitly uses full access; it does not certify sandbox enforcement or
 interactive approval prompts. Tests run through the real Termux terminal, not as ADB's shell user.
 
+Use `--headless` to run without a window; the pipeline command sets this automatically.
 The SDK path can be overridden with `--sdk`; both `emulator` and this Mac's
 `emulator-2` directory are supported. Missing SDK tools/system images produce a
 clear setup error instead of silently downloading a new SDK. The runner is for
@@ -335,7 +336,7 @@ the candidate, so no manual version substitution is needed.
 
 This command uses your existing `gh` login, verifies the run is a successful
 Android workflow on this repository's main branch, downloads its candidate and
-checks the SHA-256 sidecar. It runs the clean Android 17 suite and posts
+checks the SHA-256 sidecar. It runs the clean Android 17 suite without an emulator window and posts
 `android/emulator-api37` as pending, success, failure or error on the **built
 commit**, visible alongside its pipeline checks. The exact source, checksum and
 result are saved with the full local reports under

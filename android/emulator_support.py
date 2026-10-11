@@ -30,7 +30,7 @@ def require_test_avd(adb, serial, api=37):
         raise ValueError(f"Refusing to modify any AVD except {avd_name}")
 
 
-def ensure_emulator(sdk, adb, serial, logs, api=37):
+def ensure_emulator(sdk, adb, serial, logs, api=37, *, headless=False):
     avd_name = f"Codex_Android_Test_API{api}"
     package = IMAGES[api]
     manager = sdk / "cmdline-tools/latest/bin/avdmanager"
@@ -105,6 +105,8 @@ def ensure_emulator(sdk, adb, serial, logs, api=37):
                 "-no-snapshot",
                 "-no-audio",
                 "-no-boot-anim",
+                *(["-gpu", "swiftshader"] if api == 37 else []),
+                *(["-no-window"] if headless else []),
             ],
             stdout=output,
             stderr=subprocess.STDOUT,

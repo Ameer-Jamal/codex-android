@@ -26,7 +26,12 @@ def execute(args, adb):
     remote = f"{REMOTE}-{run_id}"
     staging = f"/data/local/tmp/codex-android-tests-{run_id}"
     process = ensure_emulator(
-        args.sdk, adb, args.serial, report.with_suffix(".emulator.log"), args.api
+        args.sdk,
+        adb,
+        args.serial,
+        report.with_suffix(".emulator.log"),
+        args.api,
+        headless=args.headless,
     )
     launched_suite = False
     registry = None
@@ -160,63 +165,74 @@ def execute(args, adb):
             time.sleep(5)
         raise ValueError(f"Suite timed out; partial report: {report}")
     finally:
-        if not launched_suite:
-            bootstrap = run(
-                adb,
-                args.serial,
-                "logcat",
-                "-d",
-                "-t",
-                "5000",
-                check=False,
-                timeout=30,
-            )
-            report.with_suffix(".bootstrap.log").write_text(
-                "\n".join(
-                    line
-                    for line in bootstrap.stdout.splitlines()
-                    if "Termux:TermuxInstaller" in line
+        try:
+            if not launched_suite:
+                bootstrap = run(
+                    adb,
+                    args.serial,
+                    "logcat",
+                    "-d",
+                    "-t",
+                    "5000",
+                    check=False,
+                    timeout=30,
                 )
-            )
-        if registry:
+                report.with_suffix(".bootstrap.log").write_text(
+                    "\n".join(
+                        line
+                        for line in bootstrap.stdout.splitlines()
+                        if "Termux:TermuxInstaller" in line
+                    )
+                )
+            if registry:
+                run(
+                    adb,
+                    args.serial,
+                    "reverse",
+                    "--remove",
+                    f"tcp:{registry.port}",
+                    check=False,
+                )
+            if launched_suite:
+                partial = run(
+                    adb,
+                    args.serial,
+                    "shell",
+                    "run-as",
+                    "com.termux",
+                    "cat",
+                    f"{remote}/report.txt",
+                    check=False,
+                )
+                if partial.returncode == 0:
+                    report.write_text(partial.stdout)
+            run(adb, args.serial, "shell", "rm", "-rf", staging, check=False)
             run(
-                adb,
-                args.serial,
-                "reverse",
-                "--remove",
-                f"tcp:{registry.port}",
-                check=False,
+                adb, args.serial, "shell", "am", "force-stop", "com.termux", check=False
             )
-            registry.close()
-        if launched_suite:
-            partial = run(
+            run(
                 adb,
                 args.serial,
                 "shell",
                 "run-as",
                 "com.termux",
-                "cat",
-                f"{remote}/report.txt",
+                "rm",
+                "-rf",
+                remote,
                 check=False,
             )
-            if partial.returncode == 0:
-                report.write_text(partial.stdout)
-        run(adb, args.serial, "shell", "rm", "-rf", staging, check=False)
-        run(adb, args.serial, "shell", "am", "force-stop", "com.termux", check=False)
-        run(
-            adb,
-            args.serial,
-            "shell",
-            "run-as",
-            "com.termux",
-            "rm",
-            "-rf",
-            remote,
-            check=False,
-        )
-        if process and not args.keep_emulator:
-            run(adb, args.serial, "emu", "kill", check=False)
-            process.wait(timeout=30)
+        except (OSError, subprocess.SubprocessError) as error:
+            print(f"Cleanup diagnostic unavailable: {error}", flush=True)
+        finally:
+            if registry:
+                registry.close()
+            if process and not args.keep_emulator:
+                try:
+                    run(adb, args.serial, "emu", "kill", check=False, timeout=15)
+                    process.wait(timeout=30)
+                except subprocess.SubprocessError:
+                    process.terminate()
+                    process.wait(timeout=30)
 
 
 def main():
@@ -248,6 +264,9 @@ def main():
         "--reuse", action="store_true", help="Reuse Termux instead of clean install"
     )
     parser.add_argument("--keep-emulator", action="store_true")
+    parser.add_argument(
+        "--headless", action="store_true", help="Run without an emulator window"
+    )
     parser.add_argument(
         "--ready", action="store_true", help=argparse.SUPPRESS
     )  # Backwards compatible; readiness is always automatic.

@@ -138,6 +138,7 @@ def main():
                 [
                     sys.executable,
                     str(Path(__file__).with_name("emulator-test.py")),
+                    "--headless",
                     "--package",
                     str(archive),
                     "--api",
