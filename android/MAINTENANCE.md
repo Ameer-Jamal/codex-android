@@ -239,8 +239,13 @@ On this Mac, Android Studio's SDK and Android 14 Google Play ARM64 system image
 are already installed. From the repository root, run:
 
 ```sh
-python3 android/emulator-test.py 0.160.0-android.4
+python3 android/emulator-test.py
 ```
+
+Without a version argument, the runner resolves npm’s current `latest` once and
+pins that exact version for the whole test. With `--package`, it reads the version
+from the candidate itself. An explicit version remains available when reproducing
+an older release or checking an expected candidate version.
 
 The runner creates/starts the dedicated `Codex_Android_Test_API34` AVD if needed,
 uses 4 GB RAM, resets Termux for a clean installation, downloads a pinned official
@@ -254,7 +259,7 @@ login or model request is required. npm 12.2.0 is the default; use
 To test a built candidate **before npm publication**, supply its tarball:
 
 ```sh
-python3 android/emulator-test.py 0.160.0-android.5 --package /absolute/path/codex-android-0.160.0-android.5.tgz
+python3 android/emulator-test.py --package /absolute/path/codex-android-candidate.tgz
 ```
 
 Use the complete cloud-built artifact, not the source-only `codex-cli/` directory.
@@ -288,3 +293,11 @@ running test emulator stays open. Exit 0 means all automatic checks passed; nonz
 means setup or tests failed. Authenticated agent execution, interactive terminal,
 upgrade migration, Android/OEM lifecycle and physical-phone acceptance remain
 separate checks.
+
+The command can also be a CI job: nonzero exit status fails the job, and the
+reports directory can be uploaded as an artifact. For pre-publication checks,
+pass the complete artifact downloaded from the exact build being released.
+This Mac can run it as a self-hosted GitHub Actions runner without an additional
+hosting service. Runner registration is separate setup; it is not installed by
+this script. GitHub-hosted ARM64 macOS runners do not support nested virtualization,
+so they cannot directly replace this Mac’s accelerated Android emulator.

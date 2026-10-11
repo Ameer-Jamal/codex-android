@@ -8,10 +8,20 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
+def read_manifest(archive):
+    with tarfile.open(archive, "r:gz") as package:
+        item = package.getmember("package/package.json")
+        if not item.isfile() or item.size > 65536:
+            raise ValueError("Candidate package manifest is invalid or too large")
+        manifest = json.load(package.extractfile(item))
+    if manifest.get("name") != "codex-android":
+        raise ValueError("Candidate is not a codex-android package")
+    return manifest
+
+
 class CandidateRegistry:
     def __init__(self, archive, version):
-        with tarfile.open(archive, "r:gz") as package:
-            manifest = json.load(package.extractfile("package/package.json"))
+        manifest = read_manifest(archive)
         if (
             manifest.get("name") != "codex-android"
             or manifest.get("version") != version

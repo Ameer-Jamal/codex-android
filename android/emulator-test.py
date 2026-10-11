@@ -15,6 +15,7 @@ from emulator_support import (
     run,
     wait_for_termux,
 )
+from emulator_version import resolve_version
 
 REMOTE = "/data/data/com.termux/files/home/codex-android-tests"
 
@@ -201,7 +202,11 @@ def execute(args, adb):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("version", help="Exact release version, e.g. 0.160.0-android.4")
+    parser.add_argument(
+        "version",
+        nargs="?",
+        help="Optional exact version; defaults to candidate version or npm latest",
+    )
     parser.add_argument("--serial", default="emulator-5580")
     parser.add_argument("--npm-version", default="12.2.0")
     parser.add_argument("--sdk", type=Path, default=Path.home() / "Library/Android/sdk")
@@ -227,7 +232,9 @@ def main():
     )
     parser.add_argument("--timeout", type=int, default=1800)
     args = parser.parse_args()
-    if not re.fullmatch(r"\d+\.\d+\.\d+-android\.\d+", args.version):
+    if args.version is not None and not re.fullmatch(
+        r"\d+\.\d+\.\d+-android\.\d+", args.version
+    ):
         parser.error(
             "Supply an exact Android release version, not latest or shell arguments"
         )
@@ -248,6 +255,8 @@ def main():
     adb = args.sdk / "platform-tools/adb"
     if not adb.is_file():
         parser.error(f"ADB missing: {adb}")
+    args.version = resolve_version(args.version, args.package)
+    print(f"Testing codex-android@{args.version}", flush=True)
     args.reports.mkdir(parents=True, exist_ok=True)
     with (args.reports / "runner.lock").open("a") as lock:
         try:

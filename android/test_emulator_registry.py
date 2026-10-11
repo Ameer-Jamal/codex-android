@@ -10,6 +10,7 @@ import urllib.request
 from pathlib import Path
 
 from emulator_registry import CandidateRegistry
+from emulator_version import resolve_version
 
 
 class CandidateRegistryTests(unittest.TestCase):
@@ -43,6 +44,17 @@ class CandidateRegistryTests(unittest.TestCase):
             archive = response.read()
         self.assertEqual(archive, self.archive.read_bytes())
         self.assertEqual(manifest["dist"]["shasum"], hashlib.sha1(archive).hexdigest())
+
+    def test_candidate_version_is_detected_without_registry_access(self):
+        from unittest.mock import patch
+
+        with patch("emulator_version.urllib.request.urlopen") as request:
+            self.assertEqual(resolve_version(archive=self.archive), self.version)
+            request.assert_not_called()
+
+    def test_explicit_version_must_match_candidate(self):
+        with self.assertRaisesRegex(ValueError, "does not match"):
+            resolve_version("0.160.0-android.5", self.archive)
 
     def test_wrong_candidate_version_is_rejected_before_serving(self):
         with self.assertRaisesRegex(ValueError, "does not match"):
