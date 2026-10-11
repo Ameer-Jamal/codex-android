@@ -201,3 +201,79 @@ works. Check the green run and release assets before announcing availability.
 `watch` uses GitHub CLI's own polling and exits nonzero on a failed run. You can
 close it and check `status` later, or simply enable GitHub workflow notifications.
 No recurring AI follow-up is required. Never automate passkey prompts while away.
+
+## Phone release checks
+
+Copy `android/phone-test.sh` to the phone and run it in Termux after installing
+the release:
+
+```sh
+bash phone-test.sh 0.160.0-android.4
+```
+
+The optional version argument checks the npm package revision; native Codex
+reports its upstream version separately. The script checks ARM64 Android/Node,
+required tools, global package identity, PATH resolution, native startup and CLI
+help parsing, automatic private home creation, and basic Termux workspace tools.
+It uses a temporary Codex home and removes only its own temporary workspace.
+It makes no model requests, reads no existing login files, and never installs or
+uninstalls anything. It deliberately stays outside the npm package for now.
+
+Exit status 0 means automatic checks passed; 1 means a check failed. This is not
+full device acceptance. Complete the printed interactive checklist for actual
+agent shell execution, edits, approvals, login, terminal handling, resume and
+Android lifecycle behavior. Check `type codex` in the calling terminal separately
+because a child Bash process cannot inspect its parent's aliases. Test both a
+clean Termux device/profile (dependency setup) and an existing installation
+(upgrade/reinstall preservation). Never delete an active Codex home to test reset.
+
+Upstream updates are manual: the `upstream` Git remote and `upstream.json` record
+the source baseline, but do not synchronize it automatically. Dependabot updates
+individual dependencies, not the Codex source baseline. Review and port a chosen
+upstream release, update its provenance, run Android validation, and publish a new
+Android package revision before users receive that update.
+
+## Local Android emulator tests
+
+The macOS runner uses a dedicated ARM64 AVD named `Codex_Android_Test_API34`.
+It refuses physical devices and all other AVD names before installing anything.
+Create the device using the installed Android SDK (adjust SDK/emulator paths for
+other machines; this Mac currently stores the emulator in `emulator-2`):
+
+```sh
+printf 'no\n' | ~/Library/Android/sdk/cmdline-tools/latest/bin/avdmanager create avd \
+  --name Codex_Android_Test_API34 \
+  --package 'system-images;android-34;google_apis_playstore;arm64-v8a' --device pixel
+~/Library/Android/sdk/emulator-2/emulator -avd Codex_Android_Test_API34 \
+  -port 5580 -memory 4096 -no-snapshot -no-audio -no-boot-anim
+```
+
+Download the official ARM64 Termux APK and verify its SHA-256 against the same
+release's published checksum file. Then, from the repository root:
+
+```sh
+python3 android/emulator-test.py 0.160.0-android.4 --termux-apk /absolute/path/termux-arm64.apk
+```
+
+Wait for Termux's initial bootstrap and its shell prompt, then confirm readiness
+in the host terminal. Subsequent runs can omit the APK and use `--ready` when the
+Termux terminal is already idle at its prompt. Add `--npm-version 12.2.0` to test
+the explicit package-script permission with npm 12 as well. Do not run concurrent tests or use
+this AVD for personal work. The runner injects a command into the foreground
+Termux terminal; it never runs the package directly as Android's ADB shell user.
+
+The suite installs Node.js and an exact npm release, runs phone checks, tests
+uninstall/reinstall preservation with a non-secret sentinel in a dedicated test
+home, and repeats launcher startup. It grants shared-download storage access to
+Termux in this test AVD for scripts/reports. It makes no model requests and needs
+no account login. This deliberately installs/removes packages inside the test AVD;
+the separate phone script does neither. Reports are saved by default under
+`~/.codex/codex-android-release/emulator/reports/`. Nonzero exit means failure.
+
+Reusing the AVD tests reinstall behavior, not clean dependency setup. For a clean
+run, stop this AVD and use Android Studio's Wipe Data on **this test AVD only**, then
+repeat installation/bootstrap. Do not wipe existing personal virtual devices.
+Local emulator downloads use the host's internet connection; release publication
+and build artifacts still stay on GitHub. Interactive terminal, authenticated
+agent execution, Android/OEM lifecycle behavior and physical-phone acceptance
+remain separate checks.

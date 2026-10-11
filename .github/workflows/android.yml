@@ -32,7 +32,7 @@ jobs:
           node-version: 22
       - run: node --test codex-cli/tests/*.test.*
       - run: python3 -m unittest discover -s android -p 'test_*.py'
-      - run: bash -n android/build.sh qa/runtime-suite/run_cli_runtime_suite.sh
+      - run: bash -n android/build.sh android/phone-test.sh android/emulator-suite.sh qa/runtime-suite/run_cli_runtime_suite.sh
       - run: python3 .github/scripts/verify_tui_core_boundary.py
       - run: python3 .github/scripts/verify_cargo_workspace_manifests.py
   build:

@@ -242,3 +242,32 @@ migration inputs. Unsupported advisory locks cannot guarantee exclusion between
 concurrent writers; the SQLite rollback fallback uses one connection and full
 synchronization. Desktop update paths are disabled on Android. See
 `MAINTENANCE.md` for the retained delta and upstream replacement candidates.
+
+## Automated ARM64 emulator checks — 2026-10-10
+
+Public `codex-android@0.160.0-android.4` passed wrapper/installation checks in a
+new dedicated Android 14/API 34 ARM64 emulator running official Termux v0.118.3
+and Node.js v24.18.0. The Termux ARM64 APK matched its official release checksum
+`72fdb596045116bf5ba1b5bdf5b26fddb9acc0bd074ad9f2da9eb0ae85e83a4e`.
+The first boot needed 4 GB emulator RAM after the default 2 GB caused Android
+system-service memory pressure; this was test-environment setup, not a Codex failure.
+
+- npm 11.20.0: clean Termux setup, missing-tool installation, package identity,
+  PATH resolution, native version/help, exec/resume/fork/login argument parsing,
+  private home creation, workspace tools, uninstall/reinstall preservation and
+  repeated launcher startup passed.
+- npm 12.2.0: explicit `--allow-scripts=codex-android` installation, all the above
+  checks, and native fresh-home `login status` configuration loading passed.
+  The expected unauthenticated result was `Not logged in`, exit status 1.
+- Both complete suite runs returned exit status 0. Reports were saved externally
+  under `~/.codex/codex-android-release/emulator/reports/`; no account login or
+  model request was used. The npm 12 run reused the already installed dependencies.
+- Host tests cover failure reporting, temporary-home isolation, preservation of
+  existing login data, wrong-command detection, and rejection of physical phones,
+  unrelated AVDs and invalid version arguments before emulator mutations.
+
+These checks do not certify authenticated agent shell/edit operations, command
+approvals, interactive terminal rendering, resume content, upgrade migration,
+network recovery or Android/OEM background behavior. Physical-device acceptance
+and the five retained regression failures remain unresolved. No package version,
+publication state or native Rust source was changed by this testing work.
