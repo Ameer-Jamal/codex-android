@@ -96,6 +96,33 @@ Exit running Codex sessions, then install the latest package:
 npm install -g --allow-scripts=codex-android codex-android@latest
 ```
 
+### Uninstall
+
+Exit all running Codex sessions, then run:
+
+```sh
+npm uninstall -g codex-android
+```
+
+This removes the package and its `codex` command. Your login, settings, and
+conversations stay in `~/.codex-android`, ready for a reinstall. Your projects and
+Termux tools such as Node.js, Git, and ripgrep are kept too. Use the package name
+without `@latest`; `-g` removes the global installation used by the `codex` command.
+
+If `codex` still launches something afterward, run `type codex` and check for an
+old alias or another installation. Remove an old alias from your shell startup
+file and run `unalias codex` in the current shell.
+
+To also erase saved login, settings, and conversations, after exiting all Codex
+sessions, run this **optional, permanent deletion**:
+
+```sh
+rm -rf -- "$HOME/.codex-android"
+```
+
+This deletes the default data directory. If you set a custom `CODEX_HOME`, its
+data remains in that directory; remove it separately only if you want to erase it.
+
 ## Troubleshooting and limitations
 
 - **Unsupported platform:** install from inside ARM64 Termux, with Node.js 22+.
