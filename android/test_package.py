@@ -31,6 +31,10 @@ class AndroidPackageTests(unittest.TestCase):
                 {path.name for path in (runtime / "bin").iterdir()},
                 {"codex", "codex-code-mode-host", "libc++_shared.so"},
             )
+            self.assertEqual(
+                (staging / "bin/codex.js").read_text().splitlines()[0],
+                "#!/data/data/com.termux/files/usr/bin/env node",
+            )
             manifest = json.loads((staging / "package.json").read_text())
             self.assertEqual(manifest["bin"], {"codex": "bin/codex.js"})
             self.assertEqual(

@@ -57,7 +57,7 @@ test("package manager failures fail installation with a recovery command", async
       existsSync: (file) => file !== `${prefix}/etc/tls/cert.pem`,
       spawnSync: () => ({ status: 100 }),
     }),
-    /Run pkg install ca-certificates and reinstall codex-android/,
+    /Run pkg install ca-certificates, then run codex again/,
   );
 });
 

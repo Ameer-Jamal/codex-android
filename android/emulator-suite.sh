@@ -33,7 +33,10 @@ fi
 npm --version
 # This AVD is exclusively for package tests, not a user's environment.
 npm uninstall -g codex-android
-npm install -g --cache "$report_dir/npm-cache-first" --allow-scripts=codex-android "${registry_args[@]}" "codex-android@$version"
+npm install -g --cache "$report_dir/npm-cache-first" --ignore-scripts "${registry_args[@]}" "codex-android@$version"
+# Exercise the actual npm-created command before any diagnostic can repair setup.
+codex --version
+echo 'PASS: installation with scripts blocked recovers on first launch'
 bash "$report_dir/phone-test.sh" "$version"
 
 # Deterministic preservation test; no real account credentials are involved.

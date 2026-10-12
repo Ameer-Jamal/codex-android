@@ -121,7 +121,7 @@ export async function runPostinstall({
     );
     if (result.error || result.status !== 0) {
       throw new Error(
-        `Termux dependency setup failed. Run pkg install ${missing.join(" ")} and reinstall codex-android.`,
+        `Termux dependency setup failed. Run pkg install ${missing.join(" ")}, then run codex again.`,
         { cause: result.error },
       );
     }

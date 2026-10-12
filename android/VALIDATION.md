@@ -336,3 +336,30 @@ acceptance remains unresolved. Physical-phone login, interactive approval
 accept/deny, terminal controls, Android/OEM lifecycle and actual upgrade migration
 remain pending. The five retained test failures listed above remain unresolved;
 no assertion or snapshot was weakened to declare stability.
+
+## First-launch setup with install scripts blocked — 2026-10-12
+
+The launcher now repeats the idempotent Termux dependency check before starting
+the native runtime. Packaging writes the Termux interpreter path into the npm
+bin in advance, so blocked postinstall does not prevent the launcher from running.
+Setup failures stop native startup and provide a manual `pkg install` recovery
+command followed by rerunning `codex`; a reinstall is not required.
+
+A clean Android 17/API 37 ARM64, 4 KB emulator run passed with Node 24.18.0 and
+npm 12.2.0. The first npm installation explicitly used `--ignore-scripts`, then
+invoked the actual `codex` command before diagnostics. First launch installed
+missing Git and ripgrep and created the private settings directory. The suite
+also passed explicit-script-approval reinstall, settings preservation, repeated
+startup, shell execution, file patching, persisted resume, native JavaScript
+helper execution and transient-response retry. No live account or model request
+was used. Twenty-six Node tests and 34 Python host tests passed.
+
+This was a local wrapper candidate assembled from the existing Android runtime
+and the modified launcher/setup sources, not a new native build or npm release.
+It retained version `0.160.0-android.4` solely for local testing; its SHA-256 was
+`eefa6b2047aa6e50197a1bb7b0abb565dd56c2136591e58ea8a76f81b4c4fd12`.
+The report `0.160.0-android.4-1791789806780350000.txt` records `SUITE_EXIT=0`
+under `~/.codex/codex-android-release/emulator/first-launch-candidate/reports/`.
+Published `android.4` is unchanged and still uses the documented installation
+permission flag. Physical-phone acceptance, 16 KB support and the five retained
+regression failures remain unresolved.

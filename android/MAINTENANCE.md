@@ -281,6 +281,11 @@ temporary loopback npm registry, and connects the emulator through ADB. This use
 the normal npm registry install and script-permission path without publishing
 anything. The registry and connection are removed afterward. Separate install
 caches prevent previous test results from hiding installation problems.
+The first installation now uses `--ignore-scripts`, then invokes the npm-created
+`codex` command before diagnostics. This requires a candidate with first-launch
+setup and a packaged Termux interpreter path; published `android.4` still needs
+the documented `--allow-scripts=codex-android` installation. The reinstall also
+checks the explicit script-approval path.
 Local testing downloads are authorized separately from the release pipeline's
 requirement to keep builds and publication transfers on GitHub.
 

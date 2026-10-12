@@ -42,6 +42,15 @@ def stage_runtime(binary_dir: Path, libcxx: Path, staging: Path) -> None:
         destination = staging / name
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / "codex-cli" / name, destination)
+        if name == "bin/codex.js":
+            # The npm bin must work even when installation scripts are blocked.
+            contents = destination.read_text()
+            first_line, separator, rest = contents.partition("\n")
+            if first_line != "#!/usr/bin/env node":
+                raise ValueError("Unexpected Android launcher interpreter")
+            destination.write_text(
+                "#!/data/data/com.termux/files/usr/bin/env node" + separator + rest
+            )
     runtime = staging / "vendor" / TARGET
     (runtime / "bin").mkdir(parents=True)
     (runtime / "codex-package.json").write_text(

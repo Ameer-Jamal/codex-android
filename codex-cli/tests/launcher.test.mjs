@@ -25,6 +25,15 @@ function fixture(t, body) {
   const root = mkdtempSync(path.join(tmpdir(), "codex-android-launcher-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(path.join(root, "bin"));
+  mkdirSync(path.join(root, "scripts"));
+  // Dependency installation is covered separately; test the startup handoff here.
+  writeFileSync(
+    path.join(root, "scripts/postinstall.js"),
+    `export async function runPostinstall() {
+    if (process.env.TEST_SETUP_FAILURE) throw new Error("Run pkg install git, then run codex again.");
+    if (process.env.TEST_SETUP_RECORD) (await import("node:fs")).writeFileSync(process.env.TEST_SETUP_RECORD, "setup completed");
+  }`,
+  );
   copyFileSync(
     path.join(sourceRoot, "bin/codex.js"),
     path.join(root, "bin/codex.js"),
@@ -204,4 +213,47 @@ test("Android uses the embedded server by default and preserves explicit daemon 
       },
     );
   }
+});
+
+test("launcher completes setup before native startup without postinstall", (t) => {
+  const { root, launcher } = fixture(
+    t,
+    'console.log((await import("node:fs")).readFileSync(process.env.TEST_SETUP_RECORD, "utf8"));',
+  );
+  const result = spawnSync(
+    process.execPath,
+    ["--import", androidPlatform, launcher],
+    {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        CODEX_HOME: path.join(root, "home"),
+        TEST_SETUP_RECORD: path.join(root, "setup"),
+      },
+    },
+  );
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout.trim(), "setup completed");
+});
+
+test("failed first-launch setup stops native startup with a recovery command", (t) => {
+  const { root, launcher } = fixture(t, 'console.log("must not run");');
+  const result = spawnSync(
+    process.execPath,
+    ["--import", androidPlatform, launcher],
+    {
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        CODEX_HOME: path.join(root, "home"),
+        TEST_SETUP_FAILURE: "1",
+      },
+    },
+  );
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout, "");
+  assert.match(
+    result.stderr,
+    /Unable to finish Codex setup:.*Run pkg install git, then run codex again/,
+  );
 });
