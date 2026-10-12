@@ -33,11 +33,21 @@ fi
 npm --version
 # This AVD is exclusively for package tests, not a user's environment.
 npm uninstall -g codex-android
-npm install -g --cache "$report_dir/npm-cache-first" --ignore-scripts "${registry_args[@]}" "codex-android@$version"
+if [[ -n ${4:-} ]]; then
+  # Candidates must support the upcoming shorter install command.
+  npm install -g --cache "$report_dir/npm-cache-first" --ignore-scripts "${registry_args[@]}" "codex-android@$version"
+else
+  # Published android.4 still requires its documented setup-script permission.
+  npm install -g --cache "$report_dir/npm-cache-first" --allow-scripts=codex-android "codex-android@$version"
+fi
 # Exercise the actual npm-created command before any diagnostic can repair setup.
 codex --version
-echo 'PASS: installation with scripts blocked recovers on first launch'
 bash "$report_dir/phone-test.sh" "$version"
+if [[ -n ${4:-} ]]; then
+  echo 'PASS: installation with scripts blocked recovers on first launch'
+else
+  echo 'PASS: published release installation with setup-script permission'
+fi
 
 # Deterministic preservation test; no real account credentials are involved.
 export CODEX_HOME="$HOME/.codex-android-emulator-test"
