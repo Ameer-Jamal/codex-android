@@ -7,7 +7,8 @@ registry_args=()
 if [[ -n ${4:-} ]]; then
   registry_args=("--registry=$4")
 fi
-exec >"$report_dir/report.txt" 2>&1
+# Keep the visible emulator useful while retaining a complete report.
+exec > >(tee "$report_dir/report.txt") 2>&1
 finish() {
   local result=$?
   printf '\nSUITE_EXIT=%s\n' "$result"
@@ -24,8 +25,9 @@ getprop ro.build.version.sdk
 printf 'Page size: '
 /system/bin/getconf PAGESIZE
 # Bootstrap has finished before the host injects this command.
-apt-get update
-apt-get install -y nodejs-lts
+apt_options=(-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
+apt-get "${apt_options[@]}" update
+apt-get "${apt_options[@]}" install -y nodejs-lts
 node --version
 if [[ -n ${3:-} ]]; then
   npm install -g "npm@$3"

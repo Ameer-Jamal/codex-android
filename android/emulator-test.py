@@ -136,7 +136,25 @@ def execute(args, adb):
         launched_suite = True
         print("Running unattended inside Termux; no live model requests...", flush=True)
         deadline = time.monotonic() + args.timeout
+        last_progress = ""
         while time.monotonic() < deadline:
+            progress = run(
+                adb,
+                args.serial,
+                "shell",
+                "run-as",
+                "com.termux",
+                "tail",
+                "-n",
+                "1",
+                f"{remote}/report.txt",
+                check=False,
+                timeout=15,
+            )
+            line = progress.stdout.strip()[:500]
+            if progress.returncode == 0 and line and line != last_progress:
+                print(f"Termux: {line}", flush=True)
+                last_progress = line
             status = run(
                 adb,
                 args.serial,
