@@ -363,3 +363,43 @@ under `~/.codex/codex-android-release/emulator/first-launch-candidate/reports/`.
 Published `android.4` is unchanged and still uses the documented installation
 permission flag. Physical-phone acceptance, 16 KB support and the five retained
 regression failures remain unresolved.
+
+## Published first-launch setup release — 2026-10-12
+
+`codex-android@0.160.0-android.5` is published with npm's `latest` tag. Public
+registry metadata and README confirm the shorter `npm i -g codex-android`
+installation and first-launch setup when npm blocks install scripts. The registry
+SHA-1 is `b0881e45223d1de062847110883386bc8d631f82`.
+
+The [full Android build](https://github.com/Ameer-Jamal/codex-android/actions/runs/38292648473)
+and dependency-security checks passed for source
+`6f97b314e12cb23221a76f59c16d388b3ecc8af1`. QUIC was updated to
+`quinn-proto` 0.11.18 and the YAML dependency migrated to `serde_norway` 0.9.42
+without relaxing advisory checks. Required Bazel lock regeneration passed.
+The five affected Rust packages passed 873 tests across seven binaries, including
+one automatic retry; this was not a complete workspace test run. Twenty-six
+Node tests and 34 Python host tests passed before release preparation.
+
+The exact cloud artifact passed the Android 17/API 37 ARM64, 4 KB emulator
+suite with Node 24.18.0 and npm 12.2.0. Installation with scripts blocked,
+first-launch dependency setup, private-home creation, settings-preserving
+reinstall, native shell execution, file patching, session resume, JavaScript
+helper execution and transient-response retry passed. The report records
+`SUITE_EXIT=0` at
+`~/.codex/codex-android-release/emulator/pipeline-38292648473-api37/0.160.0-android.5-1791833942641341000.txt`.
+Tests used deterministic local fixtures without account login or live model requests.
+
+The [staging workflow](https://github.com/Ameer-Jamal/codex-android/actions/runs/38299205789)
+staged this same artifact, and maintainer browser approval published it. Its
+SHA-256 is
+`863336839cf54400060ebb61c1dcd6f1664fa803d30c503686d17e6a9026a3af`.
+The [GitHub prerelease](https://github.com/Ameer-Jamal/codex-android/releases/tag/v0.160.0-android.5)
+targets the built source. The
+[cloud mirror workflow](https://github.com/Ameer-Jamal/codex-android/actions/runs/38303167889)
+succeeded, and the GitHub API tarball asset digest matches the SHA-256 above.
+Release uploads and registry mirroring run on GitHub;
+the local artifact download was solely for the authorized emulator test.
+
+Early access remains appropriate: physical-phone acceptance, 16 KB compatibility,
+the five retained regression failures, and shared-daemon socket recovery remain
+unresolved. Normal command approvals and required LICENSE/NOTICE are preserved.
