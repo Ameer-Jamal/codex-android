@@ -21,7 +21,7 @@ commands inside it. Use Termux's private home directory for your projects.
 pkg update && pkg upgrade
 pkg install nodejs-lts
 npm i -g codex-android
-codex login --device-auth
+codex
 ```
 
 Follow the sign-in instructions, then open a project:
