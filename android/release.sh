@@ -10,7 +10,8 @@ Usage: bash android/release.sh COMMAND [ARGS]
   watch RUN_ID                     Wait for a GitHub run (no AI needed)
   test [BUILD_RUN_ID] [--api 34]      Download/test a cloud candidate on this Mac
   inspect STAGING_RUN_ID            Show package checksum and npm stage ID
-  stage BUILD_RUN_ID               Stage an exact, successful main build on GitHub
+  publish BUILD_RUN_ID             Publish an emulator-tested build and mirror on GitHub
+  stage BUILD_RUN_ID               Compatibility alias for publish
   login                            Sign into npm using its official browser flow
   approve STAGE_ID                  Inspect and approve an already uploaded stage
   mirror VERSION SHA256 COMMIT NOTES_FILE
@@ -48,8 +49,8 @@ case "$command" in
     gh run view "$1" --repo "$repo" --log |
       awk '/Package: codex-android@|npm notice shasum:|staged with id/'
     ;;
-  stage)
-    [[ $# -eq 1 ]] || fail 'stage requires BUILD_RUN_ID'
+  publish|stage)
+    [[ $# -eq 1 ]] || fail 'publish requires BUILD_RUN_ID'
     run_id "$1"
     # The workflow itself verifies repository, source commit and build success.
     gh workflow run android-publish.yml --repo "$repo" --ref main -f "build_run_id=$1"

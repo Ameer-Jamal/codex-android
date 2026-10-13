@@ -10,5 +10,7 @@ requirements for this community Android project.
 
 Android CI runs launcher/package tests, shell and workspace checks, the retained
 `cargo-deny.yml` dependency-security check, and the NDK ARM64 build. The result is
-uploaded as a downloadable artifact. Publishing the verified tarball to npm and
-GitHub releases is a deliberate maintainer action; CI does not contain npm tokens.
+uploaded as a downloadable artifact. After exact-artifact Android 17 emulator acceptance, dispatch `android-publish.yml`
+to publish via OIDC and attach verified registry bytes to a GitHub prerelease.
+The npm trusted publisher must allow direct publishing; no npm tokens or recurring
+passkey approvals are needed. See `android/MAINTENANCE.md` for commands and caching.

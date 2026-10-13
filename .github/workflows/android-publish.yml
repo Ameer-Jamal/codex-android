@@ -1,4 +1,4 @@
-name: Stage Android npm release
+name: Publish Android npm release
 
 on:
   workflow_dispatch:
@@ -12,15 +12,15 @@ permissions:
   contents: read
 
 concurrency:
-  group: android-npm-stage
+  group: android-npm-publish
   cancel-in-progress: false
 
 jobs:
-  stage:
+  publish:
     if: github.repository == 'Ameer-Jamal/codex-android' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     permissions:
-      contents: read
+      contents: write
       actions: read
       id-token: write
     env:
@@ -74,11 +74,44 @@ jobs:
                   assert package.extractfile('package/' + name).read() == Path(name).read_bytes()
           print(f'Package: codex-android@{version}; SHA-256: {digest}')
           with Path(os.environ['GITHUB_ENV']).open('a') as output:
-              output.write(f'PACKAGE_ARCHIVE={archive}\n')
+              output.write(f'PACKAGE_ARCHIVE={archive}\nPACKAGE_VERSION={version}\nPACKAGE_SHA256={digest}\n')
           with Path(os.environ['GITHUB_STEP_SUMMARY']).open('a') as output:
               output.write(f'Package: `codex-android@{version}`\n\nSHA-256: `{digest}`\n')
           PY
-      - name: Install npm with staged publishing support
+      - name: Require emulator acceptance of this artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GH_REPO/commits/$GITHUB_SHA/status" > "$RUNNER_TEMP/status.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          statuses = json.loads((Path(os.environ['RUNNER_TEMP']) / 'status.json').read_text())['statuses']
+          acceptance = next((s for s in statuses if s['context'] == 'android/emulator-api37'), None)
+          assert acceptance and acceptance['state'] == 'success', 'Exact source needs Android 17 emulator acceptance'
+          assert acceptance['description'] == 'Emulator passed; SHA256 ' + os.environ['PACKAGE_SHA256'][:16], 'Emulator must test this artifact'
+          PY
+      - name: Install npm with trusted publishing support
         run: npm install --global npm@11.21.0 --ignore-scripts
-      - name: Stage through npm trusted publishing
-        run: npm stage publish "$PACKAGE_ARCHIVE" --access public --tag latest --ignore-scripts
+      - name: Publish through npm trusted publishing
+        run: npm publish "$PACKAGE_ARCHIVE" --access public --tag latest --ignore-scripts
+      - name: Verify public registry artifact and attach GitHub release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir "$RUNNER_TEMP/registry"
+          cd "$RUNNER_TEMP/registry"
+          for attempt in {1..7}; do
+            if npm pack --ignore-scripts "codex-android@$PACKAGE_VERSION"; then break; fi
+            if (( attempt == 7 )); then exit 1; fi
+            sleep 60
+          done
+          archive="codex-android-$PACKAGE_VERSION.tgz"
+          printf '%s  %s\n' "$PACKAGE_SHA256" "$archive" > "$archive.sha256"
+          sha256sum -c "$archive.sha256"
+          if ! gh release view "v$PACKAGE_VERSION" >/dev/null 2>&1; then
+            gh release create "v$PACKAGE_VERSION" --target "$GITHUB_SHA" --prerelease \
+              --title "Codex for Android $PACKAGE_VERSION" \
+              --notes "Verified ARM64 Android build and Android 17 emulator acceptance. Early access; physical-device acceptance remains pending. SHA-256: $PACKAGE_SHA256"
+          fi
+          gh release upload "v$PACKAGE_VERSION" "$archive" "$archive.sha256" --clobber

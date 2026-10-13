@@ -109,13 +109,19 @@ not consume a maintainer's home connection. The Android ARM64 workflow builds,
 checks, and stores the runtime package. After that run succeeds, dispatch
 `android-publish.yml` on the same main commit with its `build_run_id`. The staging
 workflow verifies the build's repository, workflow, commit, and success, checks
-the package metadata, README, licenses, and checksum, then stages it on npm.
+the package metadata, README, licenses, and checksum, then publishes it on npm after exact-artifact emulator acceptance.
 
-Configure npm trusted publishing once for `Ameer-Jamal/codex-android`, workflow
-`android-publish.yml`, with **stage-only** permission. It uses GitHub OIDC, with
-no npm token stored in repository secrets. The workflow cannot directly publish.
-A maintainer reviews the staged checksum and approves it using npm's website or
-`npm stage approve <stage-id> --auth-type=web`. Keep account 2FA enabled.
+Configure npm trusted publishing for `Ameer-Jamal/codex-android`, workflow
+`android-publish.yml`, with direct `npm publish` allowed. Keep the package setting
+requiring 2FA and disallowing bypass tokens. GitHub OIDC supplies short-lived
+credentials; no npm secret or per-release browser approval is needed.
+
+The publication workflow verifies the exact successful main build, package files
+and checksum, then requires a successful `android/emulator-api37` commit status
+whose checksum prefix matches the artifact. It publishes to npm, verifies the
+public registry tarball in the cloud, and creates a GitHub prerelease with the
+identical package and checksum. A failed registry mirror can be retried with the
+separate asset workflow without republishing npm. Every release needs a new version.
 
 Local builds remain available with `bash android/build.sh`; publish only the
 complete generated tarball, never the source-only `codex-cli/` directory.
@@ -152,56 +158,35 @@ before resetting their settings directories.
 No AI scheduler is needed. GitHub starts Android CI on every main-branch push.
 Use the Actions page or the small control script below to run release steps.
 The script needs Bash, GitHub CLI (`gh auth login`), Node/npm and repository access.
-Build, staging and mirror commands transfer only metadata locally. The optional
+Build, publish and mirror commands transfer only metadata locally. The optional
 `test` command downloads the candidate for local emulator acceptance.
 
 ```sh
 bash android/release.sh status
 bash android/release.sh build
 bash android/release.sh watch BUILD_RUN_ID
-bash android/release.sh stage BUILD_RUN_ID
-bash android/release.sh watch STAGING_RUN_ID
-bash android/release.sh inspect STAGING_RUN_ID
 ```
 
 Each dispatch prints its GitHub run URL. Copy the numeric run ID from that URL.
-Stage only once, after the build succeeds. The staging workflow requires the
-build to match main exactly; pushing another commit before staging requires a
-new successful build. `inspect` shows the cloud package checksum and npm stage
-ID. Never stage an already staged version again.
-
-Review the stage, then log in if needed and approve through npm's browser:
+For a new package version, test the successful build and start publication:
 
 ```sh
-bash android/release.sh login
-bash android/release.sh approve STAGE_ID
+bash android/release.sh test BUILD_RUN_ID
+bash android/release.sh publish BUILD_RUN_ID
 ```
 
-The `approve` command displays npm's stage metadata before requesting browser
-approval. Keep 2FA enabled. This human account approval cannot be replaced by a
-scheduled job with the current stage-only trust configuration. Don't paste tokens
-or recovery codes into scripts or chat.
+The publication workflow finishes npm publication and GitHub assets automatically,
+without npm approval prompts. The `stage` command remains a compatibility alias
+for `publish`; it no longer stages. Historical staged packages can still be
+inspected/approved with the legacy commands. Do not republish an existing version.
+The emulator test currently runs on the maintainer Mac; it is not automatically
+started by the cloud build. Publication fails closed until its acceptance status
+exists for the exact source and artifact. No AI scheduler is needed.
 
-After publication, use the version, SHA-256 and source commit from the successful
-cloud build, along with a saved user-facing release notes file:
-
-```sh
-bash android/release.sh mirror VERSION SHA256 BUILT_COMMIT NOTES_FILE
-bash android/release.sh watch MIRROR_RUN_ID
-bash android/release.sh status
-```
-
-`mirror` creates a GitHub prerelease if it does not already exist and dispatches
-the cloud asset workflow. That workflow downloads from the public npm registry,
-verifies the supplied checksum and attaches the identical archive and sidecar.
-It retries temporary download failures for up to six minutes and queues duplicate
-runs instead of running simultaneous uploads. A checksum mismatch fails without
-uploading. A successful mirror establishes that the normal registry download
-works. Check the green run and release assets before announcing availability.
-
-`watch` uses GitHub CLI's own polling and exits nonzero on a failed run. You can
-close it and check `status` later, or simply enable GitHub workflow notifications.
-No recurring AI follow-up is required. Never automate passkey prompts while away.
+Rust registry/git dependencies, target outputs and pinned V8 artifacts are cached
+between Android builds. Keys include Rust toolchain inputs, Cargo lock, NDK/build
+configuration and V8 pins; Cargo still validates fingerprints and the locked build
+and V8 verification still run. The first cache population remains a cold build.
 
 ## Phone release checks
 

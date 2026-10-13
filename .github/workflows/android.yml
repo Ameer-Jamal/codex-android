@@ -55,6 +55,19 @@ jobs:
           sudo apt-get install -y clang cmake ninja-build pkg-config perl python3
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;28.2.13676358"
           echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/28.2.13676358" >> "$GITHUB_ENV"
+      - name: Restore Rust and verified V8 build cache
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            codex-rs/target
+            .artifacts/rusty_v8
+          key: android-r28c-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'codex-rs/rust-toolchain.toml', 'codex-rs/Cargo.lock', 'android/build.sh', 'codex-rs/.cargo/config.toml', 'third_party/v8/android-artifacts.toml') }}-${{ github.sha }}
+          restore-keys: |
+            android-r28c-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'codex-rs/rust-toolchain.toml', 'codex-rs/Cargo.lock', 'android/build.sh', 'codex-rs/.cargo/config.toml', 'third_party/v8/android-artifacts.toml') }}-
+          # GitHub scopes PR caches to their merge ref; main cannot restore them.
+          save-always: false
       - name: Cross-build and package
         run: bash android/build.sh
       - name: Inspect Android dynamic linkage

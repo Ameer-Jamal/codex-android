@@ -50,8 +50,8 @@ if os.environ.get("MISSING_RELEASE") and sys.argv[1:3] == ["release", "view"]:
             return []
         return [json.loads(line) for line in self.log.read_text().splitlines()]
 
-    def test_stage_dispatches_cloud_workflow_without_local_upload(self):
-        result = self.run_command("stage", "123")
+    def test_publish_dispatches_cloud_workflow_without_local_upload(self):
+        result = self.run_command("publish", "123")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(
             self.calls(),
