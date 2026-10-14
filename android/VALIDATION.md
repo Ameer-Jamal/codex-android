@@ -403,3 +403,13 @@ the local artifact download was solely for the authorized emulator test.
 Early access remains appropriate: physical-phone acceptance, 16 KB compatibility,
 the five retained regression failures, and shared-daemon socket recovery remain
 unresolved. Normal command approvals and required LICENSE/NOTICE are preserved.
+
+## Android diagnostics release — 2026-10-14
+
+`0.160.0-android.6` is published as npm latest. The [Android build](https://github.com/Ameer-Jamal/codex-android/actions/runs/38574278554) passed security and native compilation for `6c703c64df92d9e63fd71bb612fe1093b45e78c0`. Rustls 0.23.46 resolves four new security advisories; Bazel lock regeneration and advisory checks passed. Thirty-two Node and 34 Python tests passed. All 150 tests across HTTP client, TCP tunnel, WebSocket client and Rustls provider passed serially after the parallel run encountered local socket timeouts. No complete Rust workspace run is claimed.
+
+The exact artifact passed Android 17/API 37 ARM64, 4 KB emulator acceptance: blocked-script install, read-only doctor before first-launch setup, JSON diagnostics, both launcher links, uninstall/reinstall preservation, native shell/patch/resume/JavaScript helper and transient-response retry. Native version probes use a disposable home and never the real settings home. Storage permission success/denial/missing utility/failure were tested with controlled fixtures; physical permission dialogs were not certified. Reports use deterministic local fixtures without live model requests.
+
+[Direct OIDC publication](https://github.com/Ameer-Jamal/codex-android/actions/runs/38585345504) completed without maintainer npm approval, verified the public registry tarball in the cloud and attached matching [GitHub assets](https://github.com/Ameer-Jamal/codex-android/releases/tag/v0.160.0-android.6). The API asset digest matches SHA-256 `fe84c54bd339901a4682c2dd7635ae049d2bf2e569b0cfa1857710a9d830c609`. README metadata contains both companion commands. Release uploads and registry mirroring stayed on GitHub; the local download was for authorized emulator testing only.
+
+Early access, physical-phone acceptance, 16 KB compatibility, the five retained regressions and underlying shared-daemon recovery remain unresolved. Normal approvals and LICENSE/NOTICE are preserved.
