@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { test } from "node:test";
 import fs from "node:fs";
 import os from "node:os";
@@ -158,4 +159,27 @@ test("doctor succeeds with optional warnings and a matching executable", (t) => 
   assert.equal(report.exitCode, 0);
   assert.equal(report.checks.find((c) => c.id === "path").status, "pass");
   assert.equal(fs.existsSync(path.join(root, "absent")), false);
+});
+
+test("companion CLI emits JSON and rejects invalid arguments", () => {
+  const cli = new URL("../bin/codex-android.js", import.meta.url);
+  const invalid = spawnSync(
+    process.execPath,
+    [cli.pathname, "doctor", "--invalid"],
+    { encoding: "utf8" },
+  );
+  assert.equal(invalid.status, 2);
+  const help = spawnSync(process.execPath, [cli.pathname, "--help"], {
+    encoding: "utf8",
+  });
+  assert.equal(help.status, 0);
+  const doctor = spawnSync(
+    process.execPath,
+    [cli.pathname, "doctor", "--json"],
+    { encoding: "utf8", timeout: 15000 },
+  );
+  const report = JSON.parse(doctor.stdout);
+  assert.equal(report.formatVersion, 1);
+  assert.equal(doctor.status, report.exitCode);
+  assert.equal(doctor.stderr, "");
 });

@@ -63,9 +63,10 @@ jobs:
             ~/.cargo/git
             codex-rs/target
             .artifacts/rusty_v8
-          key: android-r28c-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'codex-rs/rust-toolchain.toml', 'codex-rs/Cargo.lock', 'android/build.sh', 'codex-rs/.cargo/config.toml', 'third_party/v8/android-artifacts.toml') }}-${{ github.sha }}
+          key: android-r28c-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'codex-rs/rust-toolchain.toml', 'android/build.sh', 'codex-rs/.cargo/config.toml', 'third_party/v8/android-artifacts.toml') }}-${{ hashFiles('codex-rs/Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
-            android-r28c-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'codex-rs/rust-toolchain.toml', 'codex-rs/Cargo.lock', 'android/build.sh', 'codex-rs/.cargo/config.toml', 'third_party/v8/android-artifacts.toml') }}-
+            android-r28c-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'codex-rs/rust-toolchain.toml', 'android/build.sh', 'codex-rs/.cargo/config.toml', 'third_party/v8/android-artifacts.toml') }}-${{ hashFiles('codex-rs/Cargo.lock') }}-
+            android-r28c-${{ runner.os }}-${{ hashFiles('rust-toolchain.toml', 'codex-rs/rust-toolchain.toml', 'android/build.sh', 'codex-rs/.cargo/config.toml', 'third_party/v8/android-artifacts.toml') }}-
           # GitHub scopes PR caches to their merge ref; main cannot restore them.
           save-always: false
       - name: Cross-build and package
