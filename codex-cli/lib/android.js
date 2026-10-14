@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import { spawnSync } from "node:child_process";
 
 export function sharedStorage(cwd, realpath = fs.realpathSync) {
@@ -69,14 +70,14 @@ export function collectDoctor({
     "pkg install nodejs-lts",
   );
   const prefix = "/data/data/com.termux/files/usr";
-  const bounded = (command, args) => {
+  const bounded = (command, args, childEnv = env) => {
     try {
       return run(command, args, {
         encoding: "utf8",
         timeout: 5000,
         killSignal: "SIGKILL",
         maxBuffer: 65536,
-        env,
+        env: childEnv,
       });
     } catch {
       return { status: null };
@@ -121,10 +122,20 @@ export function collectDoctor({
   );
   const binary = path.join(root, "vendor/aarch64-linux-android/bin/codex");
   // Call the native binary directly: the normal launcher can install dependencies.
-  const native =
-    platform === "android" && arch === "arm64" && exists(binary)
-      ? bounded(binary, ["--version"])
-      : { status: null };
+  let native = { status: null };
+  if (platform === "android" && arch === "arm64" && exists(binary)) {
+    let scratch;
+    try {
+      // Upstream startup can create PATH helpers even for --version. Isolate it
+      // from real settings; only this diagnostic's temporary files are removed.
+      scratch = fs.mkdtempSync(path.join(os.tmpdir(), "codex-android-doctor-"));
+      native = bounded(binary, ["--version"], { ...env, CODEX_HOME: scratch });
+    } catch {
+      /* Report an unavailable native probe without exposing paths. */
+    } finally {
+      if (scratch) fs.rmSync(scratch, { recursive: true, force: true });
+    }
+  }
   const version =
     native.status === 0
       ? native.stdout

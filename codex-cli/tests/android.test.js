@@ -29,6 +29,8 @@ test("doctor bounds native checks and sanitizes command failures", (t) => {
     exists: () => true,
     run(command, args, options) {
       calls.push({ command, args, timeout: options.timeout });
+      if (args[0] === "--version")
+        assert.notEqual(options.env.CODEX_HOME, "/secret-home");
       return args[0] === "--version"
         ? { status: null, stderr: "private-token /secret-home" }
         : { status: 0, stdout: "16384\n" };
