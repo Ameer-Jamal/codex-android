@@ -35,13 +35,27 @@ class AndroidPackageTests(unittest.TestCase):
                 (staging / "bin/codex.js").read_text().splitlines()[0],
                 "#!/data/data/com.termux/files/usr/bin/env node",
             )
+            self.assertEqual(
+                (staging / "bin/codex-android.js").read_text().splitlines()[0],
+                "#!/data/data/com.termux/files/usr/bin/env node",
+            )
             manifest = json.loads((staging / "package.json").read_text())
-            self.assertEqual(manifest["bin"], {"codex": "bin/codex.js"})
+            self.assertEqual(
+                manifest["bin"],
+                {"codex": "bin/codex.js", "codex-android": "bin/codex-android.js"},
+            )
             self.assertEqual(
                 json.loads((runtime / "codex-package.json").read_text()),
                 {"version": manifest["version"]},
             )
-            for name in ["LICENSE", "NOTICE", "bin/codex.js", "scripts/postinstall.js"]:
+            for name in [
+                "LICENSE",
+                "NOTICE",
+                "bin/codex.js",
+                "bin/codex-android.js",
+                "lib/android.js",
+                "scripts/postinstall.js",
+            ]:
                 self.assertTrue((staging / name).is_file(), name)
 
     def test_rejects_host_binaries_before_staging(self) -> None:

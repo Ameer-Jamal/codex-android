@@ -9,7 +9,7 @@ const DEFAULT_BIN_DIR = path.resolve(
   "..",
   "bin",
 );
-const LAUNCHERS = ["codex.js"];
+const LAUNCHERS = ["codex.js", "codex-android.js"];
 const DEFAULT_SHEBANG = "#!/usr/bin/env node";
 const TERMUX_ROOT = "/data/data/com.termux";
 

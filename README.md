@@ -193,3 +193,41 @@ Licensed under Apache-2.0. See
 [LICENSE](https://github.com/Ameer-Jamal/codex-android/blob/main/LICENSE) and
 [NOTICE](https://github.com/Ameer-Jamal/codex-android/blob/main/NOTICE) for copyright,
 attribution, and third-party notices.
+
+## Android diagnostics and optional storage access
+
+Run `codex-android doctor` for a copyable diagnostic report, or
+`codex-android doctor --json` for structured results. It checks runtime versions,
+dependencies, PATH, page size and storage without installing anything, reading
+login files or sending model requests. Reports omit personal paths and command
+logs. Run `type codex` separately in your terminal to check old shell aliases.
+Warnings do not prove a device is compatible: 16 KB and physical-device acceptance
+remain pending.
+
+To optionally request access to shared files and media:
+
+```sh
+codex-android setup storage
+```
+
+Approve the Android permission prompt if you want that access. The command uses
+Termux's existing storage setup; it cannot silently grant permissions or access
+other apps' private data. Shared files appear under `~/storage/shared`. Keep
+Git/build projects under `~/` because shared storage limits executable files,
+symlinks and Unix permissions. Interactive Codex warns when started there but
+still allows file and media tasks.
+
+### Advanced Android tasks with Shizuku
+
+Shizuku is optional and does not automatically elevate Codex. Its
+[official setup guide](https://shizuku.rikka.app/guide/setup/) explains wireless
+ADB pairing and startup; restarting after a phone reboot is generally required.
+An explicitly configured [rish bridge](https://github.com/RikkaApps/Shizuku-API/blob/master/rish/README.md)
+can execute selected commands with ADB shell privileges when Shizuku is started
+through debugging. Those privileges are not root and remain subject to Android
+and manufacturer restrictions. This package does not install the bridge, enable
+debugging or route ordinary Codex commands through it. Review privileged commands
+and keep normal command approvals enabled.
+
+`npm uninstall -g codex-android` removes both `codex` and `codex-android` commands.
+Login, settings and conversations remain in your Codex home.

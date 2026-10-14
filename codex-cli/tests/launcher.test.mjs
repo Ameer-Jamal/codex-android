@@ -26,6 +26,11 @@ function fixture(t, body) {
   t.after(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(path.join(root, "bin"));
   mkdirSync(path.join(root, "scripts"));
+  mkdirSync(path.join(root, "lib"));
+  copyFileSync(
+    path.join(sourceRoot, "lib/android.js"),
+    path.join(root, "lib/android.js"),
+  );
   // Dependency installation is covered separately; test the startup handoff here.
   writeFileSync(
     path.join(root, "scripts/postinstall.js"),

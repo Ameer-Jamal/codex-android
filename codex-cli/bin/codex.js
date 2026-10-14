@@ -7,6 +7,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runPostinstall } from "../scripts/postinstall.js";
 
+import { sharedStorage, storageWarning } from "../lib/android.js";
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 if (process.platform !== "android" || process.arch !== "arm64") {
   throw new Error("Codex for Android requires ARM64 Termux on Android.");
@@ -54,6 +56,17 @@ delete env.CODEX_MANAGED_BY_VITE_PLUS;
 // server without changing approvals or sandbox policy. Explicit opt-in retains
 // access to advanced upstream commands that require a shared server.
 const args = process.argv.slice(2);
+if (
+  storageWarning(
+    args,
+    process.stdin.isTTY && process.stdout.isTTY,
+    sharedStorage(process.cwd()),
+  )
+) {
+  console.error(
+    "Shared Android storage limits executable files, symlinks and permissions.\nKeep development projects under ~/; shared storage remains useful for files and media.",
+  );
+}
 const promptDelimiter = args.indexOf("--");
 const options = promptDelimiter === -1 ? args : args.slice(0, promptDelimiter);
 if (env.CODEX_ANDROID_USE_DAEMON !== "1" && !options.includes("--no-daemon")) {

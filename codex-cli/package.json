@@ -1,11 +1,12 @@
 {
   "name": "codex-android",
-  "version": "0.160.0-android.5",
+  "version": "0.160.0-android.6",
   "description": "Codex for Android: OpenAI Codex with Termux ARM64 compatibility",
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
-    "codex": "bin/codex.js"
+    "codex": "bin/codex.js",
+    "codex-android": "bin/codex-android.js"
   },
   "scripts": {
     "postinstall": "node scripts/postinstall.js",
@@ -28,7 +29,9 @@
     "LICENSE",
     "NOTICE",
     "README.md",
-    "assets/icon.png"
+    "assets/icon.png",
+    "bin/codex-android.js",
+    "lib/"
   ],
   "homepage": "https://github.com/Ameer-Jamal/codex-android#readme",
   "repository": {

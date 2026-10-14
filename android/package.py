@@ -38,11 +38,16 @@ def stage_runtime(binary_dir: Path, libcxx: Path, staging: Path) -> None:
     shutil.copytree(ROOT / "third_party/v8/licenses", staging / "licenses/v8")
     (staging / "assets").mkdir()
     shutil.copy2(ROOT / "assets/icon.png", staging / "assets/icon.png")
-    for name in ["bin/codex.js", "scripts/postinstall.js"]:
+    for name in [
+        "bin/codex.js",
+        "bin/codex-android.js",
+        "scripts/postinstall.js",
+        "lib/android.js",
+    ]:
         destination = staging / name
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / "codex-cli" / name, destination)
-        if name == "bin/codex.js":
+        if name.startswith("bin/"):
             # The npm bin must work even when installation scripts are blocked.
             contents = destination.read_text()
             first_line, separator, rest = contents.partition("\n")

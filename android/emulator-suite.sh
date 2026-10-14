@@ -42,8 +42,23 @@ else
   # Published android.4 still requires its documented setup-script permission.
   npm install -g --cache "$report_dir/npm-cache-first" --allow-scripts=codex-android "codex-android@$version"
 fi
+# Doctor runs before setup and must not create a settings directory or install tools.
+if [[ -n ${4:-} ]]; then
+  before_git=$(command -v git || true)
+  before_rg=$(command -v rg || true)
+  before_home=0
+  [[ -d "$HOME/.codex-android" ]] && before_home=1
+  doctor_status=0
+  codex-android doctor --json > "$report_dir/doctor-before-setup.json" || doctor_status=$?
+  [[ "$doctor_status" == 0 || "$doctor_status" == 1 ]]
+  [[ "$(command -v git || true)" == "$before_git" ]]
+  [[ "$(command -v rg || true)" == "$before_rg" ]]
+  if [[ "$before_home" == 0 ]]; then test ! -d "$HOME/.codex-android"; fi
+fi
 # Exercise the actual npm-created command before any diagnostic can repair setup.
 codex --version
+codex-android doctor --json > "$report_dir/doctor.json"
+node -e 'const r=require(process.argv[1]); if(r.formatVersion!==1 || r.exitCode!==0) process.exit(1)' "$report_dir/doctor.json"
 bash "$report_dir/phone-test.sh" "$version"
 if [[ -n ${4:-} ]]; then
   echo 'PASS: installation with scripts blocked recovers on first launch'
@@ -58,13 +73,15 @@ codex --version
 printf 'preserve-settings\n' >"$CODEX_HOME/preservation-sentinel"
 npm uninstall -g codex-android
 hash -r
-if command -v codex >/dev/null 2>&1; then
+if command -v codex >/dev/null 2>&1 || command -v codex-android >/dev/null 2>&1; then
   echo 'FAIL: codex command remained after uninstall'
   exit 1
 fi
 test "$(cat "$CODEX_HOME/preservation-sentinel")" = preserve-settings
 npm install -g --cache "$report_dir/npm-cache-reinstall" --allow-scripts=codex-android "${registry_args[@]}" "codex-android@$version"
 test "$(cat "$CODEX_HOME/preservation-sentinel")" = preserve-settings
+codex-android doctor --json > "$report_dir/doctor.json"
+node -e 'const r=require(process.argv[1]); if(r.formatVersion!==1 || r.exitCode!==0) process.exit(1)' "$report_dir/doctor.json"
 bash "$report_dir/phone-test.sh" "$version"
 for iteration in 1 2 3; do
   timeout --kill-after=5 30 codex --help >/dev/null
