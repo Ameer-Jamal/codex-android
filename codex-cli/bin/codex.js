@@ -7,6 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runPostinstall } from "../scripts/postinstall.js";
 
+import { seedAndroidInstructions } from "../lib/instructions.js";
 import { sharedStorage, storageWarning } from "../lib/android.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -48,6 +49,13 @@ try {
     `Unable to create Codex home ${env.CODEX_HOME}: ${error.message}`,
   );
   process.exit(1);
+}
+try {
+  seedAndroidInstructions(env.CODEX_HOME);
+} catch {
+  console.error(
+    "Warning: unable to seed Android guidance; Codex will continue with existing instructions.",
+  );
 }
 delete env.CODEX_MANAGED_BY_BUN;
 delete env.CODEX_MANAGED_BY_PNPM;

@@ -55,6 +55,8 @@ class AndroidPackageTests(unittest.TestCase):
                 "bin/codex-android.js",
                 "lib/android.js",
                 "scripts/postinstall.js",
+                "lib/instructions.js",
+                "assets/AGENTS.android.md",
             ]:
                 self.assertTrue((staging / name).is_file(), name)
 

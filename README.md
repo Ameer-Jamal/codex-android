@@ -231,3 +231,19 @@ and keep normal command approvals enabled.
 
 `npm uninstall -g codex-android` removes both `codex` and `codex-android` commands.
 Login, settings and conversations remain in your Codex home.
+
+### Android-aware agent instructions (next release)
+
+On first launch, the launcher seeds a short Android/Termux guide in
+`$CODEX_HOME/AGENTS.md` (normally `~/.codex-android/AGENTS.md`) if neither global
+`AGENTS.md` nor `AGENTS.override.md` exists. It helps Codex select available tools,
+use appropriate storage, understand permission boundaries and offer practical
+alternatives for desktop-only workflows. It does not grant permissions or claim
+official OpenAI Android support.
+
+The file is yours to edit. Existing files, including empty files and overrides,
+are preserved; package upgrades never rewrite them. Keep an empty `AGENTS.md`
+if you do not want the default guidance. If you already have global instructions,
+merge any useful parts from the packaged `assets/AGENTS.android.md` yourself.
+Project instructions and your requests remain applicable. Restart Codex to load
+new global instructions. Doctor does not create or modify this file.

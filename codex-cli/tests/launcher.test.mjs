@@ -31,6 +31,15 @@ function fixture(t, body) {
     path.join(sourceRoot, "lib/android.js"),
     path.join(root, "lib/android.js"),
   );
+  mkdirSync(path.join(root, "assets"));
+  copyFileSync(
+    path.join(sourceRoot, "lib/instructions.js"),
+    path.join(root, "lib/instructions.js"),
+  );
+  copyFileSync(
+    path.join(sourceRoot, "assets/AGENTS.android.md"),
+    path.join(root, "assets/AGENTS.android.md"),
+  );
   // Dependency installation is covered separately; test the startup handoff here.
   writeFileSync(
     path.join(root, "scripts/postinstall.js"),
@@ -68,6 +77,10 @@ test("launcher forwards arguments, status, and an explicit Codex home", (t) => {
   );
   assert.equal(result.status, 23, result.stderr);
   assert.equal(statSync(home).mode & 0o777, 0o700);
+  assert.match(
+    readFileSync(path.join(home, "AGENTS.md"), "utf8"),
+    /Codex for Android environment/,
+  );
   assert.deepEqual(JSON.parse(result.stdout), {
     args: ["--no-daemon", "exec", "a prompt with spaces"],
     home,
@@ -140,6 +153,10 @@ test("first launch creates the default home and preserves it on later launches",
   assert.equal(first.status, 0, first.stderr);
   assert.equal(first.stdout.trim(), home);
   assert.equal(statSync(home).mode & 0o777, 0o700);
+  assert.match(
+    readFileSync(path.join(home, "AGENTS.md"), "utf8"),
+    /Codex for Android environment/,
+  );
   writeFileSync(path.join(home, "config.toml"), "keep my settings");
   assert.equal(run().status, 0);
   assert.equal(

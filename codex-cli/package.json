@@ -31,7 +31,8 @@
     "README.md",
     "assets/icon.png",
     "bin/codex-android.js",
-    "lib/"
+    "lib/",
+    "assets/AGENTS.android.md"
   ],
   "homepage": "https://github.com/Ameer-Jamal/codex-android#readme",
   "repository": {

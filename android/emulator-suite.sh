@@ -57,6 +57,10 @@ if [[ -n ${4:-} ]]; then
 fi
 # Exercise the actual npm-created command before any diagnostic can repair setup.
 codex --version
+if [[ -n ${4:-} ]]; then
+  test -f "$HOME/.codex-android/AGENTS.md"
+  export CODEX_ANDROID_EXPECT_INSTRUCTIONS=1
+fi
 codex-android doctor --json > "$report_dir/doctor.json"
 node -e 'const r=require(process.argv[1]); if(r.formatVersion!==1 || r.exitCode!==0) process.exit(1)' "$report_dir/doctor.json"
 bash "$report_dir/phone-test.sh" "$version"
@@ -71,6 +75,9 @@ export CODEX_HOME="$HOME/.codex-android-emulator-test"
 unset CODEX_ANDROID_USE_DAEMON
 codex --version
 printf 'preserve-settings\n' >"$CODEX_HOME/preservation-sentinel"
+if [[ -n ${4:-} ]]; then
+  printf 'User-owned Android instructions\n' >"$CODEX_HOME/AGENTS.md"
+fi
 npm uninstall -g codex-android
 hash -r
 if command -v codex >/dev/null 2>&1 || command -v codex-android >/dev/null 2>&1; then
@@ -82,6 +89,9 @@ npm install -g --cache "$report_dir/npm-cache-reinstall" --allow-scripts=codex-a
 test "$(cat "$CODEX_HOME/preservation-sentinel")" = preserve-settings
 codex-android doctor --json > "$report_dir/doctor.json"
 node -e 'const r=require(process.argv[1]); if(r.formatVersion!==1 || r.exitCode!==0) process.exit(1)' "$report_dir/doctor.json"
+if [[ -n ${4:-} ]]; then
+  test "$(cat "$CODEX_HOME/AGENTS.md")" = 'User-owned Android instructions'
+fi
 bash "$report_dir/phone-test.sh" "$version"
 for iteration in 1 2 3; do
   timeout --kill-after=5 30 codex --help >/dev/null

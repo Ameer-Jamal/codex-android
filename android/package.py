@@ -43,6 +43,8 @@ def stage_runtime(binary_dir: Path, libcxx: Path, staging: Path) -> None:
         "bin/codex-android.js",
         "scripts/postinstall.js",
         "lib/android.js",
+        "lib/instructions.js",
+        "assets/AGENTS.android.md",
     ]:
         destination = staging / name
         destination.parent.mkdir(parents=True, exist_ok=True)

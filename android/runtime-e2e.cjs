@@ -154,6 +154,14 @@ async function main() {
   }
   try {
     const first = await invoke(["Android fixture first turn"]);
+    if (process.env.CODEX_ANDROID_EXPECT_INSTRUCTIONS === "1") {
+      assert(
+        JSON.stringify(requests[0].input).includes(
+          "Codex for Android environment",
+        ),
+        "Android global guidance missing from native model context",
+      );
+    }
     assert.equal(
       fs.readFileSync(path.join(project, "shell.txt"), "utf8"),
       "android-shell-ok\n",
