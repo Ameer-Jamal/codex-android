@@ -413,3 +413,23 @@ The exact artifact passed Android 17/API 37 ARM64, 4 KB emulator acceptance: blo
 [Direct OIDC publication](https://github.com/Ameer-Jamal/codex-android/actions/runs/38585345504) completed without maintainer npm approval, verified the public registry tarball in the cloud and attached matching [GitHub assets](https://github.com/Ameer-Jamal/codex-android/releases/tag/v0.160.0-android.6). The API asset digest matches SHA-256 `fe84c54bd339901a4682c2dd7635ae049d2bf2e569b0cfa1857710a9d830c609`. README metadata contains both companion commands. Release uploads and registry mirroring stayed on GitHub; the local download was for authorized emulator testing only.
 
 Early access, physical-phone acceptance, 16 KB compatibility, the five retained regressions and underlying shared-daemon recovery remain unresolved. Normal approvals and LICENSE/NOTICE are preserved.
+
+## Physical-phone observations — 2026-10-14
+
+The maintainer supplied Termux screenshots and reported that Codex works on their
+phone with `0.160.0-android.6`. The screenshots confirm a successful global npm
+update despite blocked postinstall, successful shared-storage setup after the
+Termux confirmation, and doctor PASS results for Android/ARM64, Node 26.3.1,
+dependencies/certificates, native 0.160.0, executable PATH and 4096-byte pages.
+A Codex session exit summary and resume instructions are visible.
+
+An old shell alias initially redirected `codex` to the removed `codex-vl` command;
+`unalias codex` fixed the current terminal. Persistent startup-file alias cleanup
+was not independently verified. The incorrect package specification
+`codex@android-latest` and `codex-android --doctor` were corrected by the user.
+These are command-entry issues, not evidence of a runtime failure.
+
+This records basic physical-device installation/startup/diagnostic/storage
+observations, not complete device acceptance. Phone model, Android version,
+fresh login, interactive approval accept/deny, actual resumed session, lifecycle,
+16 KB compatibility and complete upgrade/data-preservation checks remain pending.
