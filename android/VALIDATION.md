@@ -433,3 +433,34 @@ This records basic physical-device installation/startup/diagnostic/storage
 observations, not complete device acceptance. Phone model, Android version,
 fresh login, interactive approval accept/deny, actual resumed session, lifecycle,
 16 KB compatibility and complete upgrade/data-preservation checks remain pending.
+
+## Deterministic on-phone app build — 2026-10-14
+
+`python3 android/app-build-e2e.py` passed on the connected Android 16 ARM64
+phone using Termux's existing Java 21 toolchain. The script transferred the Java
+fixture and API 34/D8 jars, then compiled Java and DEX, packaged, aligned and
+signed the APK inside Termux. Authorized USB ADB installed the unique demo app;
+the automated UI check verified its counter changed from 0 to 1. The app-specific
+log contained no fatal exception. No Codex command or model request was made.
+
+Run `20261014174647a5db` produced SHA-256
+`8f8bd42dee55d751e45922bc7a969f5f31378d79da8f18a1d0bf89e3eb8a9fc0`, matching
+the APK pulled from the phone. Source and the installed demo remain available.
+The host report includes build output, the checksum, app logs and a screenshot.
+Initial attempts exposed a locked screen and dropped input; the driver now
+rejects a visible lock screen, paces command input and checks build startup.
+All 38 Python tests, shell syntax checks and Ruff passed for the harness.
+
+This validates the physical on-phone build toolchain and ADB installation, not
+Termux's installer handoff or autonomous model behavior. Dependencies were already
+present on this phone; fresh dependency provisioning remains unverified. See
+[the reproducible test instructions](demos/hello-world/README.md).
+
+The same harness subsequently passed on the Android 17/API 37 ARM64 emulator
+(`20261014194020003d`), with automatic running-device selection and missing
+packaging-tool installation. Updating Termux's C++ runtime resolved an `aapt2`
+linker failure from the older bootstrap. Compilation/signing happened inside the
+emulator; ADB installation and the 0-to-1 counter check passed with zero model
+requests. Emulator startup also selected and booted the installed dedicated AVD;
+existing data was preserved. Forty Python tests passed. This does not extend
+physical-phone or 16 KB compatibility acceptance.
