@@ -495,9 +495,17 @@ content difference (0.160.0 to 0.162.1); other snapshot differences were not
 accepted. A focused follow-up was cancelled during recompilation to reduce host
 load, so no passing rerun is claimed for these updates.
 
-Exact-package Android 17 acceptance was attempted, but the harness stopped on
-an ADB report-read timeout during Termux dependency provisioning. This is an
-incomplete acceptance result, not a demonstrated Codex runtime failure or pass.
+The initial exact-package Android 17 attempt stopped on an ADB report-read
+timeout during Termux dependency provisioning. A clean retry without concurrent
+Rust compilation passed (`SUITE_EXIT=0`), report
+`0.162.1-android.1-1792159079510005000.txt`. It used the same cloud package and
+checksum above. Installation with scripts blocked recovered on first launch;
+uninstall/reinstall preserved test settings and repeated startup worked.
+Native exec, shell, file patch, tool-result round trips, persisted session,
+resume, native JavaScript helper and transient network retry checks passed.
+These are deterministic fixture checks, with no live model requests. The ADB
+timeout did not recur; its cause is not established.
+
 No physical-device or 16 KB acceptance is claimed. Main and the published npm
 release remain unchanged; the candidate is blocked from release pending
-failure triage and completed acceptance.
+native failure triage.
