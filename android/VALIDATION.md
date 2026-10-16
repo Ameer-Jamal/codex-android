@@ -464,3 +464,40 @@ emulator; ADB installation and the 0-to-1 counter check passed with zero model
 requests. Emulator startup also selected and booted the installed dedicated AVD;
 existing data was preserved. Forty Python tests passed. This does not extend
 physical-phone or 16 KB compatibility acceptance.
+
+
+## Upstream 0.162.1 candidate — 2026-10-16
+
+Candidate `0.162.1-android.1` is isolated on `feature/upstream-0.162.1`
+([draft PR #14](https://github.com/Ameer-Jamal/codex-android/pull/14)).
+It imports official `rust-v0.162.1`, commit
+`092d3acd6bec3e3a14bdc7e7a2810ab628ab759d`. It has not been published.
+
+[Android build 38765050653](https://github.com/Ameer-Jamal/codex-android/actions/runs/38765050653)
+passed security, checks and cross-compilation for source
+`889e0f05de2185ac8e968425a7c0eaf2501860c7`. The downloaded candidate matches
+its cloud checksum:
+`3b073342b1f782bce4bf7cc598d595062e2df98d747a6aa20406cd167903b8a5`.
+
+Local wrapper/setup tests (35), Android Python tests (40), and GitHub script
+Python tests (80) passed, as did shell syntax, boundary/workspace checks and
+Bazel lock regeneration. Native state/protocol/transport testing ran 758 cases:
+756 passed and two transport tests failed, including serial and certificate
+retries. The larger native core/TUI/CLI/app-server/daemon run executed 13,288
+cases: 13,075 passed, 148 failed, 65 timed out and 37 were skipped; 77 passing
+cases required retries. Failures include MCP/Guardian, worktree, proxy, timing
+and snapshot cases. Their causes have not all been established; they must not
+be treated as harmless or as proven upstream defects.
+
+Four retained Android apply-patch tests were adapted to the new upstream API.
+Thirty-two snapshots were updated only where the version display was the sole
+content difference (0.160.0 to 0.162.1); other snapshot differences were not
+accepted. A focused follow-up was cancelled during recompilation to reduce host
+load, so no passing rerun is claimed for these updates.
+
+Exact-package Android 17 acceptance was attempted, but the harness stopped on
+an ADB report-read timeout during Termux dependency provisioning. This is an
+incomplete acceptance result, not a demonstrated Codex runtime failure or pass.
+No physical-device or 16 KB acceptance is claimed. Main and the published npm
+release remain unchanged; the candidate is blocked from release pending
+failure triage and completed acceptance.
