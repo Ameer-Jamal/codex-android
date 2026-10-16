@@ -544,3 +544,26 @@ All 35 Node wrapper tests and 40 Android Python tests passed again. The previous
 acceptance remain recorded above. No live model request or physical-phone
 acceptance is claimed. Publication still requires the successful exact main
 build and Android 17 acceptance of that main artifact.
+
+### Published upstream upgrade — 2026-10-16
+
+`codex-android@0.162.1-android.1` is published as npm latest. The
+[exact main build](https://github.com/Ameer-Jamal/codex-android/actions/runs/38920797169)
+passed checks, security and native compilation for `5a6496becbf3d3daffaa5e81b0f274b47e2190a0`. Its exact
+package passed clean Android 17 emulator acceptance before publication; the
+checksum-bound success status was posted on the built commit. The local result
+is saved under `emulator/pipeline-38920797169-api37/result.json` in the
+external release logs. No live model request was made.
+
+[Direct OIDC publication](https://github.com/Ameer-Jamal/codex-android/actions/runs/38929527067)
+verified the registry download in the cloud and attached matching
+[GitHub release assets](https://github.com/Ameer-Jamal/codex-android/releases/tag/v0.162.1-android.1). Public version, latest tag and README
+metadata were checked; GitHub's package and checksum-file asset digests match.
+Package SHA-256: `6efed6c48aa00082c1b402a5b892d60904bc4cce79d7a4878d21271e93553b79`. Registry SHA-1: `56b59ac54477525a4d4adf6332b41a3ee1be423a`.
+
+The README identifies the bundled Codex 0.162.1 engine and update command. Local
+package downloads were confined to authorized emulator testing; publication and
+registry mirroring remained on GitHub. Early access continues: physical-phone
+acceptance of this version, 16 KB support and shared-daemon recovery are pending.
+The scoped native regression evidence and test-fixture changes are recorded
+above; no complete native workspace test run is claimed.
