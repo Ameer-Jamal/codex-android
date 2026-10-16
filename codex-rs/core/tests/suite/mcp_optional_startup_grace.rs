@@ -50,7 +50,10 @@ async fn optional_mcp_startup_grace_controls_initial_turn_tool_catalog(
     };
     let startup_timeout = match scenario {
         StartupGraceScenario::ShortGraceOmitsPending => PENDING_SERVER_TIMEOUT,
-        StartupGraceScenario::DisabledGraceRespectsStartupTimeout => Duration::from_millis(250),
+        // Startup begins while the fixture is still constructing the session.
+        // A subsecond deadline can expire before the first turn on platforms
+        // with slow first-request TLS initialization.
+        StartupGraceScenario::DisabledGraceRespectsStartupTimeout => Duration::from_secs(10),
         StartupGraceScenario::CustomGraceIncludesReady
         | StartupGraceScenario::DisabledGraceWaitsForStartup => Duration::from_secs(1),
     };
@@ -146,7 +149,7 @@ async fn optional_mcp_startup_grace_controls_initial_turn_tool_catalog(
                     .is_err(),
                 "zero grace should keep waiting until the server-specific startup timeout"
             );
-            tokio::time::timeout(Duration::from_secs(1), &mut turn)
+            tokio::time::timeout(startup_timeout + Duration::from_secs(5), &mut turn)
                 .await
                 .context("zero grace should stop waiting once the server startup times out")??;
             release_startup

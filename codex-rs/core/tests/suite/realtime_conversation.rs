@@ -641,7 +641,7 @@ async fn conversation_start_defaults_to_v2_and_gpt_realtime_1_5() -> Result<()> 
 
     assert!(
         realtime_server
-            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(2))
+            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(5))
             .await
     );
 
@@ -2133,7 +2133,7 @@ async fn conversation_start_uses_openai_env_key_fallback_with_chatgpt_auth() -> 
     let test = builder.build_with_websocket_server(&startup_server).await?;
     assert!(
         startup_server
-            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(2))
+            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(5))
             .await
     );
 
@@ -2541,7 +2541,7 @@ async fn conversation_second_start_replaces_runtime() -> Result<()> {
     let test = builder.build_with_websocket_server(&startup_server).await?;
     assert!(
         startup_server
-            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(2))
+            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(5))
             .await
     );
 
@@ -2689,7 +2689,7 @@ async fn conversation_uses_experimental_realtime_ws_base_url_override() -> Resul
     let test = builder.build_with_websocket_server(&startup_server).await?;
     assert!(
         startup_server
-            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(2))
+            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(5))
             .await
     );
 
@@ -2769,7 +2769,7 @@ async fn conversation_uses_default_realtime_backend_prompt() -> Result<()> {
     let test = builder.build_with_websocket_server(&startup_server).await?;
     assert!(
         startup_server
-            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(2))
+            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(5))
             .await
     );
 
@@ -2856,7 +2856,7 @@ async fn conversation_uses_empty_instructions_for_null_or_empty_prompt() -> Resu
     let test = builder.build_with_websocket_server(&startup_server).await?;
     assert!(
         startup_server
-            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(2))
+            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(5))
             .await
     );
 
@@ -2944,7 +2944,7 @@ async fn conversation_uses_explicit_start_voice() -> Result<()> {
     let test = builder.build_with_websocket_server(&startup_server).await?;
     assert!(
         startup_server
-            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(2))
+            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(5))
             .await
     );
 
@@ -3018,7 +3018,7 @@ async fn conversation_uses_configured_realtime_voice() -> Result<()> {
     let test = builder.build_with_websocket_server(&startup_server).await?;
     assert!(
         startup_server
-            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(2))
+            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(5))
             .await
     );
 
@@ -3139,7 +3139,7 @@ async fn conversation_uses_experimental_realtime_ws_backend_prompt_override() ->
     let test = builder.build_with_websocket_server(&startup_server).await?;
     assert!(
         startup_server
-            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(2))
+            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(5))
             .await
     );
 
@@ -3225,7 +3225,7 @@ async fn conversation_uses_experimental_realtime_ws_startup_context_override() -
     fs::write(test.workspace_path("README.md"), "workspace marker")?;
     assert!(
         startup_server
-            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(2))
+            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(5))
             .await
     );
 
@@ -3304,7 +3304,7 @@ async fn conversation_disables_realtime_startup_context_with_empty_override() ->
     fs::write(test.workspace_path("README.md"), "workspace marker")?;
     assert!(
         startup_server
-            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(2))
+            .wait_for_handshakes(/*expected*/ 1, Duration::from_secs(5))
             .await
     );
 

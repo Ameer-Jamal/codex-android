@@ -335,13 +335,40 @@ result are saved with the full local reports under
 to the source build; full emulator logs remain on the Mac.
 
 Use `--api 34` for the older compatibility check; use `--no-status` for read-only
-GitHub access. A successful emulator status is currently a **manual release
-acceptance check**, not enforced by the npm staging workflow. Check both the
-cloud build and emulator status before staging a new release. A failed test does
-not publish anything or alter npm tags.
+GitHub access. The publishing workflow requires a successful Android 17 status
+for the exact main commit and verifies that its checksum matches the artifact.
+After acceptance, `bash android/release.sh publish BUILD_RUN_ID` publishes using
+the configured OIDC trusted publisher and mirrors the verified registry package
+on GitHub. `stage` is a compatibility alias for `publish`. A failed emulator
+check does not publish anything or alter npm tags.
 
 This pull-based connection needs no continuously listening self-hosted runner,
 paid service or AI schedule. Run it manually before releases. Scheduling the same
 command with a specific new build ID is possible through macOS launchd; avoid
 repeatedly downloading/testing an unchanged build. Your Mac must be awake, have
 the SDK image installed and have an authenticated `gh` session.
+
+## Scoped upstream native checks
+
+Before scoped MCP tests, rebuild the current fixture rather than reusing an
+executable from an older checkout:
+
+```sh
+cd codex-rs
+cargo build -p codex-rmcp-client --bin test_stdio_server
+```
+
+Code-mode tests also need the matching `codex-code-mode-host`; use the verified
+[V8 build setup](../third_party/v8/README.md). Run scoped native tests with a real
+terminal profile and without a host `NO_COLOR` override. For example, from the
+repository root:
+
+```sh
+env -u NO_COLOR TERM=xterm-256color COLORTERM=truecolor CARGO_BUILD_JOBS=2 \
+  just test -p codex-core -p codex-tui -p codex-cli \
+  -p codex-app-server-daemon -p codex-app-server --test-threads 2
+```
+
+Keep emulator acceptance separate from Rust compilation to reduce host resource
+contention. Native fixture checks and emulator tests use synthetic responses;
+they do not require a paid model request.

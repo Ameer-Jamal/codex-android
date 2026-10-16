@@ -3,11 +3,13 @@ use crate::transport::remote_control::protocol::normalize_remote_control_url;
 use pretty_assertions::assert_eq;
 use serde_json::json;
 use std::time::SystemTime;
+use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpListener;
 use tokio::sync::oneshot;
 
-const TEST_REQUEST_TIMEOUT: Duration = Duration::from_millis(100);
+// Include first-request route/TLS initialization before exercising the stall.
+const TEST_REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 
 fn auth() -> RemoteControlConnectionAuth {
     RemoteControlConnectionAuth {
@@ -28,7 +30,8 @@ fn assert_transient_timeout(err: &io::Error, expected_status: Option<StatusCode>
             request_error.status,
             request_error.is_transient(err.kind()),
         ),
-        (ErrorKind::TimedOut, expected_status, true)
+        (ErrorKind::TimedOut, expected_status, true),
+        "unexpected timeout classification: {err:?}"
     );
 }
 
@@ -45,6 +48,37 @@ async fn timed_out_request(partial_response: Option<&'static [u8]>) -> io::Error
     let (request_done_tx, request_done_rx) = oneshot::channel();
     let server_task = tokio::spawn(async move {
         let (mut stream, _) = listener.accept().await.expect("request should connect");
+        // An unsolicited response can be rejected as UnexpectedMessage before
+        // the client sends its request. Consume the request before deliberately
+        // stalling either the response headers or its body.
+        let mut headers = Vec::new();
+        while !headers.ends_with(b"\r\n\r\n") {
+            headers.push(
+                stream
+                    .read_u8()
+                    .await
+                    .expect("request headers should arrive"),
+            );
+            assert!(
+                headers.len() < 16 * 1024,
+                "fixture request headers too large"
+            );
+        }
+        let content_length = std::str::from_utf8(&headers)
+            .expect("HTTP headers should be UTF-8")
+            .lines()
+            .filter_map(|line| line.split_once(':'))
+            .find(|(name, _)| name.eq_ignore_ascii_case("content-length"))
+            .expect("JSON request should have a content length")
+            .1
+            .trim()
+            .parse::<usize>()
+            .expect("content length should be numeric");
+        assert!(content_length < 16 * 1024, "fixture request body too large");
+        stream
+            .read_exact(&mut vec![0; content_length])
+            .await
+            .expect("request body should arrive");
         if let Some(partial_response) = partial_response {
             stream
                 .write_all(partial_response)

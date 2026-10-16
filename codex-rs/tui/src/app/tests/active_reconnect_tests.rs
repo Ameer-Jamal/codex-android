@@ -656,6 +656,7 @@ async fn reconnect_exhaustion_and_unknown_initial_thread_stay_offline() -> Resul
     assert_eq!(start.elapsed().as_secs(), 120);
     app.begin_reconnect();
     app.chat_widget.reconnect_failed();
+    crate::chatwidget::tests::helpers::reset_status_timer_for_snapshot(&mut app.chat_widget);
     assert_snapshot!(
         "reconnect_failed",
         render_bottom_popup(&app.chat_widget, /*width*/ 80)

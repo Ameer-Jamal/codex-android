@@ -465,7 +465,6 @@ requests. Emulator startup also selected and booted the installed dedicated AVD;
 existing data was preserved. Forty Python tests passed. This does not extend
 physical-phone or 16 KB compatibility acceptance.
 
-
 ## Upstream 0.162.1 candidate — 2026-10-16
 
 Candidate `0.162.1-android.1` is isolated on `feature/upstream-0.162.1`
@@ -509,3 +508,39 @@ timeout did not recur; its cause is not established.
 No physical-device or 16 KB acceptance is claimed. Main and the published npm
 release remain unchanged; the candidate is blocked from release pending
 native failure triage.
+
+### Native failure triage completed — 2026-10-16
+
+Every one of the 213 failed or timed-out cases from the initial 13,288-case
+runtime run subsequently passed in scoped reruns. The first lower-concurrency
+retry ran 216 cases: 183 passed, 27 failed and six timed out. After fixture fixes,
+a 76-case follow-up passed 70; its remaining six plugin-startup cases then all
+passed after allowing remote discovery before waiting for the PID file. This
+is a record of combined scoped results, not a new complete-workspace green run.
+
+The retained Android apply-patch tests passed unchanged assertions. Thirty-six
+native version-display snapshots and one daemon version-display snapshot were
+updated. Reconnect, Guardian and hook screenshots reset their display clocks
+before capture instead of accepting varying elapsed times or animation frames.
+Cursor tests passed with the host's `NO_COLOR` override removed. Local TUI matrix
+cases now have a bounded three-minute nextest budget; observed successful runs
+took 84–116 seconds. CI budgets and functional assertions were retained.
+
+Other corrections are confined to test setup: bootstrap explicitly disables its
+updater, missing-host tests explicitly select a missing executable (including
+when fallback is prohibited), HTTP fixtures consume requests before responding,
+and startup deadlines include platform client setup. The auth notification's
+immediate wakeup is checked independently with a paused clock. Rebuilding the
+current `test_stdio_server` fixture is required before scoped MCP tests.
+
+The 759-case state/protocol/transport run passed 758; its remaining body-timeout
+case then passed in the four-case transport/auth follow-up. The new immediate
+notification test also passed. Existing timeout/error-classification assertions
+remain. Together these reruns resolve the five previously retained regressions;
+no production security restriction or approval behavior was relaxed.
+
+All 35 Node wrapper tests and 40 Android Python tests passed again. The previous
+80 GitHub-script tests, workspace/TUI boundary checks and candidate Android 17
+acceptance remain recorded above. No live model request or physical-phone
+acceptance is claimed. Publication still requires the successful exact main
+build and Android 17 acceptance of that main artifact.

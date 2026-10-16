@@ -313,6 +313,10 @@ async fn guardian_denied_exec_renders_warning_and_denied_request() {
             .expect("Failed to insert history lines in test");
     }
 
+    // Snapshot content independently of wall-clock time spent preparing history.
+    chat.bottom_pane.set_status_timer_origin(None);
+    chat.bottom_pane
+        .reset_status_timer(std::time::Duration::ZERO);
     term.draw(|f| {
         chat.render(f.area(), f.buffer_mut());
     })
@@ -369,6 +373,10 @@ async fn guardian_approved_exec_is_hidden_from_history() {
 
     assert!(drain_insert_history(&mut rx).is_empty());
 
+    // Snapshot content independently of wall-clock time spent preparing history.
+    chat.bottom_pane.set_status_timer_origin(None);
+    chat.bottom_pane
+        .reset_status_timer(std::time::Duration::ZERO);
     term.draw(|f| {
         chat.render(f.area(), f.buffer_mut());
     })
@@ -455,6 +463,10 @@ async fn guardian_approved_request_permissions_clears_status_without_history() {
 
     assert!(drain_insert_history(&mut rx).is_empty());
 
+    // Snapshot content independently of wall-clock time spent preparing history.
+    chat.bottom_pane.set_status_timer_origin(None);
+    chat.bottom_pane
+        .reset_status_timer(std::time::Duration::ZERO);
     term.draw(|f| {
         chat.render(f.area(), f.buffer_mut());
     })
@@ -529,6 +541,10 @@ async fn guardian_timed_out_exec_renders_warning_and_timed_out_request() {
             .expect("Failed to insert history lines in test");
     }
 
+    // Snapshot content independently of wall-clock time spent preparing history.
+    chat.bottom_pane.set_status_timer_origin(None);
+    chat.bottom_pane
+        .reset_status_timer(std::time::Duration::ZERO);
     term.draw(|f| {
         chat.render(f.area(), f.buffer_mut());
     })
@@ -648,6 +664,10 @@ async fn app_server_guardian_review_denied_renders_denied_request_snapshot() {
             .expect("Failed to insert history lines in test");
     }
 
+    // Snapshot content independently of wall-clock time spent preparing history.
+    chat.bottom_pane.set_status_timer_origin(None);
+    chat.bottom_pane
+        .reset_status_timer(std::time::Duration::ZERO);
     term.draw(|f| {
         chat.render(f.area(), f.buffer_mut());
     })
@@ -729,6 +749,10 @@ async fn app_server_guardian_review_timed_out_renders_timed_out_request_snapshot
             .expect("Failed to insert history lines in test");
     }
 
+    // Snapshot content independently of wall-clock time spent preparing history.
+    chat.bottom_pane.set_status_timer_origin(None);
+    chat.bottom_pane
+        .reset_status_timer(std::time::Duration::ZERO);
     term.draw(|f| {
         chat.render(f.area(), f.buffer_mut());
     })

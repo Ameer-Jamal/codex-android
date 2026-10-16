@@ -111,6 +111,7 @@ async fn lost_mutation_reply_preserves_work_without_resubmitting() -> Result<()>
         (history.session_id, history.text),
         (id.to_string(), "only once".into())
     );
+    crate::chatwidget::tests::helpers::reset_status_timer_for_snapshot(&mut app.chat_widget);
     assert_snapshot!(
         "offline_draft",
         format!(

@@ -4,7 +4,9 @@ use std::path::Path;
 use std::time::Duration;
 
 pub async fn wait_for_pid_file(path: &Path) -> anyhow::Result<String> {
-    let pid = tokio::time::timeout(Duration::from_secs(2), async {
+    // Remote discovery and platform client setup can precede spawning the
+    // fixture. Keep this bounded without racing that setup against two seconds.
+    let pid = tokio::time::timeout(Duration::from_secs(10), async {
         loop {
             if let Ok(contents) = fs::read_to_string(path) {
                 let trimmed = contents.trim();

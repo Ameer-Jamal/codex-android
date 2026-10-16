@@ -1911,6 +1911,21 @@ mod tests {
     }
 
     #[tokio::test(start_paused = true)]
+    async fn queued_auth_change_without_server_delay_is_immediate() {
+        let (auth_change_tx, mut auth_change_rx) = watch::channel(0);
+        auth_change_tx.send_replace(1);
+        let started = tokio::time::Instant::now();
+        timeout(
+            Duration::from_millis(100),
+            wait_for_auth_change(&mut auth_change_rx, None),
+        )
+        .await
+        .expect("auth change should wake before the account retry interval")
+        .expect("auth watch should remain open");
+        assert_eq!(started.elapsed(), Duration::ZERO);
+    }
+
+    #[tokio::test(start_paused = true)]
     async fn queued_auth_change_waits_for_server_delay() {
         let (auth_change_tx, mut auth_change_rx) = watch::channel(0);
         auth_change_tx.send_replace(1);

@@ -2224,9 +2224,11 @@ async fn remote_control_waits_for_account_id_before_enrolling() {
     .expect("auth with account id should save");
     auth_manager.reload().await;
 
-    let enroll_request = timeout(Duration::from_millis(100), accept_http_request(&listener))
+    // First-request platform client initialization is wall-clock work. The
+    // virtual-clock unit test covers immediate auth wakeup separately.
+    let enroll_request = timeout(Duration::from_secs(5), accept_http_request(&listener))
         .await
-        .expect("auth change should wake remote control before the retry delay");
+        .expect("auth change should allow remote control enrollment");
     assert_eq!(
         enroll_request.request_line,
         "POST /backend-api/wham/remote/control/server/enroll HTTP/1.1"

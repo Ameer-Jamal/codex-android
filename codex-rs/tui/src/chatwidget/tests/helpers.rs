@@ -265,6 +265,12 @@ pub(crate) fn set_active_cell(chat: &mut ChatWidget, cell: Box<dyn HistoryCell>)
     chat.transcript.active_cell = Some(cell);
 }
 
+pub(crate) fn reset_status_timer_for_snapshot(chat: &mut ChatWidget) {
+    chat.bottom_pane.set_status_timer_origin(None);
+    chat.bottom_pane
+        .reset_status_timer(std::time::Duration::ZERO);
+}
+
 // ChatWidget may emit other `Op`s (e.g. history/logging updates) on the same channel; this helper
 // filters until we see a submission op.
 pub(super) fn next_submit_op(op_rx: &mut tokio::sync::mpsc::UnboundedReceiver<Op>) -> Op {
