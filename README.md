@@ -12,6 +12,11 @@ Real-device testing is still in progress. This is a community project based on
 [OpenAI Codex](https://github.com/openai/codex), independently maintained and not
 affiliated with OpenAI.
 
+This release bundles [Codex 0.162.1](https://github.com/openai/codex/releases/tag/rust-v0.162.1)
+with the Android setup and diagnostics commands. Upstream releases are imported
+and tested before publishing an Android update; installed packages update when
+you run `npm i -g codex-android`.
+
 ## Get started
 
 Install [Termux](https://github.com/termux/termux-app#installation), then run these

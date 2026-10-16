@@ -464,3 +464,83 @@ emulator; ADB installation and the 0-to-1 counter check passed with zero model
 requests. Emulator startup also selected and booted the installed dedicated AVD;
 existing data was preserved. Forty Python tests passed. This does not extend
 physical-phone or 16 KB compatibility acceptance.
+
+## Upstream 0.162.1 candidate — 2026-10-16
+
+Candidate `0.162.1-android.1` is isolated on `feature/upstream-0.162.1`
+([draft PR #14](https://github.com/Ameer-Jamal/codex-android/pull/14)).
+It imports official `rust-v0.162.1`, commit
+`092d3acd6bec3e3a14bdc7e7a2810ab628ab759d`. It has not been published.
+
+[Android build 38765050653](https://github.com/Ameer-Jamal/codex-android/actions/runs/38765050653)
+passed security, checks and cross-compilation for source
+`889e0f05de2185ac8e968425a7c0eaf2501860c7`. The downloaded candidate matches
+its cloud checksum:
+`3b073342b1f782bce4bf7cc598d595062e2df98d747a6aa20406cd167903b8a5`.
+
+Local wrapper/setup tests (35), Android Python tests (40), and GitHub script
+Python tests (80) passed, as did shell syntax, boundary/workspace checks and
+Bazel lock regeneration. Native state/protocol/transport testing ran 758 cases:
+756 passed and two transport tests failed, including serial and certificate
+retries. The larger native core/TUI/CLI/app-server/daemon run executed 13,288
+cases: 13,075 passed, 148 failed, 65 timed out and 37 were skipped; 77 passing
+cases required retries. Failures include MCP/Guardian, worktree, proxy, timing
+and snapshot cases. Their causes have not all been established; they must not
+be treated as harmless or as proven upstream defects.
+
+Four retained Android apply-patch tests were adapted to the new upstream API.
+Thirty-two snapshots were updated only where the version display was the sole
+content difference (0.160.0 to 0.162.1); other snapshot differences were not
+accepted. A focused follow-up was cancelled during recompilation to reduce host
+load, so no passing rerun is claimed for these updates.
+
+The initial exact-package Android 17 attempt stopped on an ADB report-read
+timeout during Termux dependency provisioning. A clean retry without concurrent
+Rust compilation passed (`SUITE_EXIT=0`), report
+`0.162.1-android.1-1792159079510005000.txt`. It used the same cloud package and
+checksum above. Installation with scripts blocked recovered on first launch;
+uninstall/reinstall preserved test settings and repeated startup worked.
+Native exec, shell, file patch, tool-result round trips, persisted session,
+resume, native JavaScript helper and transient network retry checks passed.
+These are deterministic fixture checks, with no live model requests. The ADB
+timeout did not recur; its cause is not established.
+
+No physical-device or 16 KB acceptance is claimed. Main and the published npm
+release remain unchanged; the candidate is blocked from release pending
+native failure triage.
+
+### Native failure triage completed — 2026-10-16
+
+Every one of the 213 failed or timed-out cases from the initial 13,288-case
+runtime run subsequently passed in scoped reruns. The first lower-concurrency
+retry ran 216 cases: 183 passed, 27 failed and six timed out. After fixture fixes,
+a 76-case follow-up passed 70; its remaining six plugin-startup cases then all
+passed after allowing remote discovery before waiting for the PID file. This
+is a record of combined scoped results, not a new complete-workspace green run.
+
+The retained Android apply-patch tests passed unchanged assertions. Thirty-six
+native version-display snapshots and one daemon version-display snapshot were
+updated. Reconnect, Guardian and hook screenshots reset their display clocks
+before capture instead of accepting varying elapsed times or animation frames.
+Cursor tests passed with the host's `NO_COLOR` override removed. Local TUI matrix
+cases now have a bounded three-minute nextest budget; observed successful runs
+took 84–116 seconds. CI budgets and functional assertions were retained.
+
+Other corrections are confined to test setup: bootstrap explicitly disables its
+updater, missing-host tests explicitly select a missing executable (including
+when fallback is prohibited), HTTP fixtures consume requests before responding,
+and startup deadlines include platform client setup. The auth notification's
+immediate wakeup is checked independently with a paused clock. Rebuilding the
+current `test_stdio_server` fixture is required before scoped MCP tests.
+
+The 759-case state/protocol/transport run passed 758; its remaining body-timeout
+case then passed in the four-case transport/auth follow-up. The new immediate
+notification test also passed. Existing timeout/error-classification assertions
+remain. Together these reruns resolve the five previously retained regressions;
+no production security restriction or approval behavior was relaxed.
+
+All 35 Node wrapper tests and 40 Android Python tests passed again. The previous
+80 GitHub-script tests, workspace/TUI boundary checks and candidate Android 17
+acceptance remain recorded above. No live model request or physical-phone
+acceptance is claimed. Publication still requires the successful exact main
+build and Android 17 acceptance of that main artifact.
