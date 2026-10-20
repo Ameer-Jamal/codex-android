@@ -40,6 +40,8 @@ class AndroidPackageTests(unittest.TestCase):
                 "#!/data/data/com.termux/files/usr/bin/env node",
             )
             manifest = json.loads((staging / "package.json").read_text())
+            self.assertEqual(set(manifest.get("scripts", {})), {"test"})
+            self.assertFalse((staging / "scripts/postinstall.js").exists())
             self.assertEqual(
                 manifest["bin"],
                 {"codex": "bin/codex.js", "codex-android": "bin/codex-android.js"},
@@ -54,7 +56,7 @@ class AndroidPackageTests(unittest.TestCase):
                 "bin/codex.js",
                 "bin/codex-android.js",
                 "lib/android.js",
-                "scripts/postinstall.js",
+                "lib/setup.js",
                 "lib/instructions.js",
                 "assets/AGENTS.android.md",
             ]:

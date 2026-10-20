@@ -567,3 +567,17 @@ registry mirroring remained on GitHub. Early access continues: physical-phone
 acceptance of this version, 16 KB support and shared-daemon recovery are pending.
 The scoped native regression evidence and test-fixture changes are recorded
 above; no complete native workspace test run is claimed.
+
+## Script-free installation candidate — 2026-10-20
+
+`0.162.1-android.2` removes the npm postinstall hook and obsolete launcher-rewriting
+code. Both Termux interpreter paths are set during packaging. Missing Termux
+dependencies are still installed at first launch, with the same recovery commands.
+The emulator harness uses ordinary global installation and rejects lifecycle hooks
+in the installed manifest. Uninstall continues to preserve settings and sessions.
+
+Local verification: 32 Node tests, 40 Android Python tests, shell syntax, Prettier
+and required `just fmt` passed. Cloud and exact-artifact emulator acceptance are
+pending before publication. Native Codex remains 0.162.1; early-access limitations
+remain. The user's greeting on android.1 is a basic phone smoke test, not physical
+acceptance of this new package.

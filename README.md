@@ -37,9 +37,8 @@ codex
 ```
 
 The npm package installs the `codex` command and includes the Android runtime.
-Starting with version `0.160.0-android.5`, first launch completes setup even if
-npm reports that install scripts were blocked. You can run `codex` normally after
-installation; no script-permission flag is required.
+Installation runs no npm lifecycle scripts and needs no script approval.
+Run `codex` after installation to complete setup automatically.
 Setup adds missing Git, ripgrep, browser-opening tools, and CA certificates
 through Termux's package manager. First launch creates your private settings
 directory automatically. You don't need Rust or a source build. Install project
@@ -141,9 +140,7 @@ data remains in that directory; remove it separately only if you want to erase i
   Android storage such as `/sdcard`. Shared storage can prevent programs from
   executing or saving session data correctly.
 - **Setup fails:** check your connection and the Termux package mirror, then run
-  the `pkg install` command shown in the error and try `codex` again. Version
-  `0.160.0-android.5` completes setup at first launch even when npm blocks scripts.
-  Older versions need `--allow-scripts=codex-android` during installation.
+  the `pkg install` command shown in the error and try `codex` again. Setup runs automatically when you launch `codex`; no npm script approval is needed.
 - **Another `codex` is installed:** both packages use the same command name.
   Remove the previous installation before installing this one.
 - **An old shell alias launches another package:** run `type codex`. Remove the old

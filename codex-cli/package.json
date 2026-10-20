@@ -1,6 +1,6 @@
 {
   "name": "codex-android",
-  "version": "0.162.1-android.1",
+  "version": "0.162.1-android.2",
   "description": "Codex for Android: OpenAI Codex with Termux ARM64 compatibility",
   "license": "Apache-2.0",
   "type": "module",
@@ -9,7 +9,6 @@
     "codex-android": "bin/codex-android.js"
   },
   "scripts": {
-    "postinstall": "node scripts/postinstall.js",
     "test": "node --test tests/*.test.*"
   },
   "engines": {
@@ -23,7 +22,6 @@
   ],
   "files": [
     "bin/codex.js",
-    "scripts/postinstall.js",
     "vendor/",
     "licenses/",
     "LICENSE",

@@ -23,7 +23,7 @@ class CandidateRegistryTests(unittest.TestCase):
             {
                 "name": "codex-android",
                 "version": self.version,
-                "scripts": {"postinstall": "node scripts/postinstall.js"},
+                "scripts": {"test": "node --test"},
             }
         ).encode()
         with tarfile.open(self.archive, "w:gz") as package:
@@ -37,9 +37,7 @@ class CandidateRegistryTests(unittest.TestCase):
         with urllib.request.urlopen(registry.url + "/codex-android") as response:
             metadata = json.load(response)
         manifest = metadata["versions"][self.version]
-        self.assertEqual(
-            manifest["scripts"], {"postinstall": "node scripts/postinstall.js"}
-        )
+        self.assertEqual(manifest["scripts"], {"test": "node --test"})
         with urllib.request.urlopen(manifest["dist"]["tarball"]) as response:
             archive = response.read()
         self.assertEqual(archive, self.archive.read_bytes())

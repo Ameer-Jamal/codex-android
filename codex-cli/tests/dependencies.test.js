@@ -1,16 +1,10 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
 import test from "node:test";
-import { runPostinstall } from "../scripts/postinstall.js";
+import { ensureTermuxDependencies } from "../lib/setup.js";
 
 const prefix = "/data/data/com.termux/files/usr";
-function options(t) {
-  const binDir = mkdtempSync(path.join(tmpdir(), "codex-dependencies-"));
-  t.after(() => rmSync(binDir, { recursive: true, force: true }));
+function options() {
   return {
-    binDir,
     platform: "android",
     env: { PREFIX: prefix },
     warn: () => {},
@@ -22,7 +16,7 @@ test("installs only missing Termux packages and verifies their files", async (t)
   const missing = new Set([`${prefix}/bin/git`, `${prefix}/bin/rg`]);
   const calls = [];
   const config = options(t);
-  await runPostinstall({
+  await ensureTermuxDependencies({
     ...config,
     existsSync: (file) => !missing.has(file),
     spawnSync: (command, args, settings) => {
@@ -41,7 +35,7 @@ test("installs only missing Termux packages and verifies their files", async (t)
 });
 
 test("does not invoke the package manager when dependencies are present", async (t) => {
-  await runPostinstall({
+  await ensureTermuxDependencies({
     ...options(t),
     existsSync: () => true,
     spawnSync: () => {
@@ -50,9 +44,9 @@ test("does not invoke the package manager when dependencies are present", async 
   });
 });
 
-test("package manager failures fail installation with a recovery command", async (t) => {
+test("package manager failures fail startup setup with a recovery command", async (t) => {
   await assert.rejects(
-    runPostinstall({
+    ensureTermuxDependencies({
       ...options(t),
       existsSync: (file) => file !== `${prefix}/etc/tls/cert.pem`,
       spawnSync: () => ({ status: 100 }),
@@ -63,11 +57,42 @@ test("package manager failures fail installation with a recovery command", async
 
 test("a successful package manager exit must actually supply the dependencies", async (t) => {
   await assert.rejects(
-    runPostinstall({
+    ensureTermuxDependencies({
       ...options(t),
       existsSync: (file) => file !== `${prefix}/bin/termux-open-url`,
       spawnSync: () => ({ status: 0 }),
     }),
     /still missing: termux-tools/,
   );
+});
+
+test("invalid prefixes use the Termux default for dependency installation", async () => {
+  for (const value of [
+    "relative",
+    "/tmp/x",
+    `${prefix}/../other`,
+    `${prefix}\nnode`,
+  ]) {
+    let installed = false;
+    await ensureTermuxDependencies({
+      ...options(),
+      env: { PREFIX: value },
+      existsSync: () => installed,
+      spawnSync: (command) => {
+        assert.equal(command, `${prefix}/bin/pkg`);
+        installed = true;
+        return { status: 0 };
+      },
+    });
+  }
+});
+
+test("non-Termux setup does not install anything", async () => {
+  await ensureTermuxDependencies({
+    platform: "linux",
+    env: {},
+    spawnSync: () => {
+      throw new Error("unexpected install");
+    },
+  });
 });

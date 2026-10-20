@@ -41,7 +41,7 @@ def stage_runtime(binary_dir: Path, libcxx: Path, staging: Path) -> None:
     for name in [
         "bin/codex.js",
         "bin/codex-android.js",
-        "scripts/postinstall.js",
+        "lib/setup.js",
         "lib/android.js",
         "lib/instructions.js",
         "assets/AGENTS.android.md",
@@ -50,7 +50,7 @@ def stage_runtime(binary_dir: Path, libcxx: Path, staging: Path) -> None:
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(ROOT / "codex-cli" / name, destination)
         if name.startswith("bin/"):
-            # The npm bin must work even when installation scripts are blocked.
+            # Ship the Termux interpreter path; installation runs no scripts.
             contents = destination.read_text()
             first_line, separator, rest = contents.partition("\n")
             if first_line != "#!/usr/bin/env node":

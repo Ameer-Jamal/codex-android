@@ -35,13 +35,9 @@ fi
 npm --version
 # This AVD is exclusively for package tests, not a user's environment.
 npm uninstall -g codex-android
-if [[ -n ${4:-} ]]; then
-  # Candidates must support the upcoming shorter install command.
-  npm install -g --cache "$report_dir/npm-cache-first" --ignore-scripts "${registry_args[@]}" "codex-android@$version"
-else
-  # Published android.4 still requires its documented setup-script permission.
-  npm install -g --cache "$report_dir/npm-cache-first" --allow-scripts=codex-android "codex-android@$version"
-fi
+npm install -g --cache "$report_dir/npm-cache-first" "${registry_args[@]}" "codex-android@$version"
+# Reject lifecycle hooks in the installed release, not just ignored execution.
+node -e 'const p=require(process.argv[1]); for(const hook of ["preinstall","install","postinstall","prepare"]) if(p.scripts?.[hook]) throw new Error(`Unexpected npm hook: ${hook}`)' "$(npm root -g)/codex-android/package.json"
 # Doctor runs before setup and must not create a settings directory or install tools.
 if [[ -n ${4:-} ]]; then
   before_git=$(command -v git || true)
@@ -65,9 +61,9 @@ codex-android doctor --json > "$report_dir/doctor.json"
 node -e 'const r=require(process.argv[1]); if(r.formatVersion!==1 || r.exitCode!==0) process.exit(1)' "$report_dir/doctor.json"
 bash "$report_dir/phone-test.sh" "$version"
 if [[ -n ${4:-} ]]; then
-  echo 'PASS: installation with scripts blocked recovers on first launch'
+  echo 'PASS: script-free installation completes setup on first launch'
 else
-  echo 'PASS: published release installation with setup-script permission'
+  echo 'PASS: published release installs without lifecycle hooks'
 fi
 
 # Deterministic preservation test; no real account credentials are involved.
@@ -85,7 +81,7 @@ if command -v codex >/dev/null 2>&1 || command -v codex-android >/dev/null 2>&1;
   exit 1
 fi
 test "$(cat "$CODEX_HOME/preservation-sentinel")" = preserve-settings
-npm install -g --cache "$report_dir/npm-cache-reinstall" --allow-scripts=codex-android "${registry_args[@]}" "codex-android@$version"
+npm install -g --cache "$report_dir/npm-cache-reinstall" "${registry_args[@]}" "codex-android@$version"
 test "$(cat "$CODEX_HOME/preservation-sentinel")" = preserve-settings
 codex-android doctor --json > "$report_dir/doctor.json"
 node -e 'const r=require(process.argv[1]); if(r.formatVersion!==1 || r.exitCode!==0) process.exit(1)' "$report_dir/doctor.json"

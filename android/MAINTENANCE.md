@@ -263,15 +263,12 @@ python3 android/emulator-test.py --package /absolute/path/codex-android-candidat
 Use the complete cloud-built artifact, not the source-only `codex-cli/` directory.
 The runner verifies the candidate name/version, serves its exact bytes through a
 temporary loopback npm registry, and connects the emulator through ADB. This uses
-the normal npm registry install and script-permission path without publishing
-anything. The registry and connection are removed afterward. Separate install
-caches prevent previous test results from hiding installation problems.
-With `--package`, the first installation uses `--ignore-scripts`, then invokes the npm-created
-`codex` command before diagnostics. This requires a candidate with first-launch
-setup and a packaged Termux interpreter path; published `android.4` still needs
-the documented `--allow-scripts=codex-android` installation. Without `--package`,
-the suite tests that documented installation of the published release. The reinstall also
-checks the explicit script-approval path.
+the normal npm registry installation without publishing anything. The registry
+and connection are removed afterward. Separate install caches prevent previous
+test results from hiding installation problems. Both installs use the ordinary
+command without script-permission flags. The suite rejects npm lifecycle hooks
+in the installed manifest and invokes the npm-created `codex` command to complete
+first-launch setup. Packaged launchers already contain the Termux interpreter path.
 Local testing downloads are authorized separately from the release pipeline's
 requirement to keep builds and publication transfers on GitHub.
 

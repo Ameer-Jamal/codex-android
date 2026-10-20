@@ -25,7 +25,6 @@ function fixture(t, body) {
   const root = mkdtempSync(path.join(tmpdir(), "codex-android-launcher-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(path.join(root, "bin"));
-  mkdirSync(path.join(root, "scripts"));
   mkdirSync(path.join(root, "lib"));
   copyFileSync(
     path.join(sourceRoot, "lib/android.js"),
@@ -42,8 +41,8 @@ function fixture(t, body) {
   );
   // Dependency installation is covered separately; test the startup handoff here.
   writeFileSync(
-    path.join(root, "scripts/postinstall.js"),
-    `export async function runPostinstall() {
+    path.join(root, "lib/setup.js"),
+    `export async function ensureTermuxDependencies() {
     if (process.env.TEST_SETUP_FAILURE) throw new Error("Run pkg install git, then run codex again.");
     if (process.env.TEST_SETUP_RECORD) (await import("node:fs")).writeFileSync(process.env.TEST_SETUP_RECORD, "setup completed");
   }`,

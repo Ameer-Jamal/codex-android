@@ -31,7 +31,7 @@ for tool in git rg termux-open-url; do
   if command -v "$tool" >/dev/null 2>&1; then
     pass "$tool available"
   else
-    fail "Missing $tool. Reinstall with --allow-scripts=codex-android."
+    fail "Missing $tool. Run codex once to complete setup, then retry."
   fi
 done
 
@@ -41,7 +41,7 @@ if ! global_root=$(timeout 30 npm root -g 2>/dev/null); then
 fi
 package="$global_root/codex-android"
 if ! version=$(node -e 'const p = require(process.argv[1]); if (p.name !== "codex-android") process.exit(1); console.log(p.version)' "$package/package.json" 2>/dev/null); then
-  fail 'codex-android is not installed globally. Install with npm install -g --allow-scripts=codex-android codex-android.'
+  fail 'codex-android is not installed globally. Install with npm install -g codex-android.'
   exit 1
 fi
 printf 'Installed npm release: %s\n' "$version"

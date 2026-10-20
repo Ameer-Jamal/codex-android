@@ -5,7 +5,7 @@ import { existsSync, mkdirSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { runPostinstall } from "../scripts/postinstall.js";
+import { ensureTermuxDependencies } from "../lib/setup.js";
 
 import { seedAndroidInstructions } from "../lib/instructions.js";
 import { sharedStorage, storageWarning } from "../lib/android.js";
@@ -26,10 +26,10 @@ if (!existsSync(binary)) {
     "Android runtime is missing. Install the tarball produced by android/build.sh.",
   );
 }
-// npm may block postinstall. Recover setup before starting the native runtime;
+// Complete setup before starting the native runtime;
 // when dependencies are present this does not invoke the package manager.
 try {
-  await runPostinstall({ log: console.error });
+  await ensureTermuxDependencies({ log: console.error });
 } catch (error) {
   console.error(`Unable to finish Codex setup: ${error.message}`);
   process.exit(1);
