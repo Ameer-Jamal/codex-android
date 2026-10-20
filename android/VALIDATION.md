@@ -595,3 +595,28 @@ Four maintenance-only notices are documented in matching deny/audit policies:
 `zbus_names`, `zvariant` and `zvariant_derive` remain in the desktop Linux zbus 4
 graph pending upstream zbus 6 migration. No vulnerability findings were ignored.
 The actual TLS and ZIP vulnerabilities are patched.
+
+### Published script-free installation — 2026-10-20
+
+`codex-android@0.162.1-android.2` is published as npm latest. The
+[exact main build](https://github.com/Ameer-Jamal/codex-android/actions/runs/39496751355)
+passed checks, security and native compilation for `65bd6524dac442897bb131608f4f97aad51d4a45`. Its exact
+package passed clean Android 17 emulator acceptance before publication; the
+checksum-bound success status was posted on the built commit. The local result
+is saved under `emulator/pipeline-39496751355-api37/result.json` in the
+external release logs. No live model request was made.
+
+[Direct OIDC publication](https://github.com/Ameer-Jamal/codex-android/actions/runs/39505822383)
+verified the registry download in the cloud and attached matching
+[GitHub release assets](https://github.com/Ameer-Jamal/codex-android/releases/tag/v0.162.1-android.2). Public version, latest tag and README
+metadata were checked; GitHub's package and checksum-file asset digests match.
+Package SHA-256: `d142067cf1b4ab1712a1e71abe51addcd4dae434ea46e1e6d058a287e65dd86b`. Registry SHA-1: `e1dfa0b3d8d10eda5270805100fbfb32db55b326`.
+
+The published npm manifest has no install lifecycle hooks; ordinary global installation
+completed setup on first launch in the emulator. Both launchers and settings
+preservation passed. The README documents setup without npm script approval. Local
+package downloads were confined to authorized emulator testing; publication and
+registry mirroring remained on GitHub. Early access continues: physical-phone
+acceptance of this version, 16 KB support and shared-daemon recovery are pending.
+The scoped native regression evidence and test-fixture changes are recorded
+above; no complete native workspace test run is claimed.
