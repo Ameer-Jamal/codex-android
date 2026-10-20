@@ -581,3 +581,17 @@ and required `just fmt` passed. Cloud and exact-artifact emulator acceptance are
 pending before publication. Native Codex remains 0.162.1; early-access limitations
 remain. The user's greeting on android.1 is a basic phone smoke test, not physical
 acceptance of this new package.
+
+### Security gate follow-up
+
+The first cloud run (39495987304) stopped before compilation because newly
+reported advisories affected existing dependencies. The candidate upgrades
+`rustls-webpki` to 0.103.16, both webpki root bundles to 1.0.10 and `zip` to 9.0.5.
+ZIP API adaptation retains path confinement and masks privileged permission bits;
+new regression fixtures cover parent traversal and SUID/SGID/sticky-bit stripping.
+
+Four maintenance-only notices are documented in matching deny/audit policies:
+`basic-toml` remains via i18n-config/age pending an upstream replacement;
+`zbus_names`, `zvariant` and `zvariant_derive` remain in the desktop Linux zbus 4
+graph pending upstream zbus 6 migration. No vulnerability findings were ignored.
+The actual TLS and ZIP vulnerabilities are patched.

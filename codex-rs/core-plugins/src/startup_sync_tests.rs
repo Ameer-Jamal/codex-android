@@ -1463,3 +1463,51 @@ fn curated_repo_backup_archive_zip_bytes(sha: &str) -> Vec<u8> {
 
     writer.finish().expect("finish zip writer").into_inner()
 }
+
+#[cfg(unix)]
+#[test]
+fn extracted_zip_permissions_drop_privileged_bits() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let mut writer = ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    writer
+        .start_file(
+            "root/run.sh",
+            SimpleFileOptions::default().unix_permissions(0o755),
+        )
+        .expect("start script");
+    writer.write_all(b"#!/bin/sh\n").expect("write script");
+    let mut bytes = writer.finish().expect("finish archive").into_inner();
+    // Set SUID/SGID/sticky in the central directory, as an untrusted archive can.
+    let central = bytes
+        .windows(4)
+        .position(|b| b == b"PK\x01\x02")
+        .expect("central header");
+    bytes[central + 38..central + 42].copy_from_slice(&(0o107755_u32 << 16).to_le_bytes());
+    let destination = tempdir().expect("destination");
+    extract_zipball_to_dir(&bytes, destination.path()).expect("extract script");
+    let mode = std::fs::metadata(destination.path().join("run.sh"))
+        .expect("script metadata")
+        .permissions()
+        .mode();
+    assert_eq!(mode & 0o7777, 0o755);
+}
+
+#[test]
+fn extracted_zip_rejects_parent_traversal() {
+    let mut writer = ZipWriter::new(std::io::Cursor::new(Vec::new()));
+    writer
+        .start_file("../outside", SimpleFileOptions::default())
+        .expect("start entry");
+    writer.write_all(b"untrusted").expect("write entry");
+    let bytes = writer.finish().expect("finish archive").into_inner();
+    let destination = tempdir().expect("destination");
+    let error = extract_zipball_to_dir(&bytes, destination.path()).expect_err("reject traversal");
+    assert!(error.contains("escapes extraction root"));
+    assert!(
+        std::fs::read_dir(destination.path())
+            .expect("directory")
+            .next()
+            .is_none()
+    );
+}
