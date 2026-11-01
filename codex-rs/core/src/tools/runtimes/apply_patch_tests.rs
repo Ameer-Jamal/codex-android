@@ -3,7 +3,6 @@ use crate::config::PermissionProfileSnapshot;
 use crate::environment_selection::EnvironmentConfigOrigin;
 use crate::sandboxing::SandboxPermissions;
 use crate::tools::sandboxing::SandboxAttempt;
-use crate::tools::sandboxing::SandboxOverride;
 use crate::tools::sandboxing::sandbox_override_for_first_attempt;
 use crate::tools::sandboxing::unsandboxed_execution_allowed;
 use codex_protocol::config_types::WindowsSandboxLevel;
