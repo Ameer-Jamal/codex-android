@@ -2,9 +2,9 @@ use super::ContextualUserFragment;
 use codex_prompts::ResolvedModelMessages;
 use codex_protocol::models::ContentItem;
 use codex_protocol::models::ContentItemKind;
+use codex_protocol::models::input_text;
 use codex_protocol::openai_models::ModelMessageTextTooLong;
 use codex_protocol::openai_models::validate_model_message_text;
-use codex_protocol::models::input_text;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct GuardianNodeReplPolicy {

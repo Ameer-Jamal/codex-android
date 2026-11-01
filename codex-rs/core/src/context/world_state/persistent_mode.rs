@@ -9,9 +9,9 @@ use super::WorldStateUpdate;
 use crate::context::ContextualUserFragment;
 use codex_protocol::models::ContentItem;
 use codex_protocol::models::ContentItemKind;
+use codex_protocol::models::input_text;
 use codex_protocol::openai_models::ModelMessageTextTooLong;
 use codex_protocol::openai_models::validate_model_message_text;
-use codex_protocol::models::input_text;
 use serde::Deserialize;
 use serde::Serialize;
 
