@@ -481,21 +481,24 @@ impl SqliteConfig {
             .busy_timeout(DEFAULT_BUSY_TIMEOUT)
             .log_statements(LevelFilter::Off);
         // Each failed attempt closes its pool before initialization is retried.
-        let journal_mode_policy = std::cell::Cell::new(journal_mode_policy);
-        let connect = || async {
-            connect_once(&options, journal_mode_policy.get())
-                .await
-                .map_err(anyhow::Error::from)
+        let connect = |policy: JournalModePolicy| {
+            let options = &options;
+            async move {
+                connect_once(options, policy)
+                    .await
+                    .map_err(anyhow::Error::from)
+            }
         };
-        let pool = match retry_on_busy(connect).await {
+        let mut journal_mode_policy = journal_mode_policy;
+        let pool = match retry_on_busy(move || connect(journal_mode_policy)).await {
             Ok(pool) => pool,
             Err(error)
                 if cfg!(target_os = "android")
-                    && journal_mode_policy.get() == JournalModePolicy::InitializeWal =>
+                    && journal_mode_policy == JournalModePolicy::InitializeWal =>
             {
                 tracing::warn!(%error, "SQLite WAL initialization failed; retrying with a rollback journal");
-                journal_mode_policy.set(JournalModePolicy::InitializeDelete);
-                retry_on_busy(connect).await?
+                journal_mode_policy = JournalModePolicy::InitializeDelete;
+                retry_on_busy(move || connect(journal_mode_policy)).await?
             }
             Err(error) => return Err(error),
         };
@@ -528,7 +531,7 @@ impl SqliteConfig {
                     );
                 }
 
-                return retry_on_busy(connect).await;
+                return retry_on_busy(move || connect(journal_mode_policy)).await;
             }
         }
 
