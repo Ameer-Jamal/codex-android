@@ -1105,9 +1105,9 @@ fn extract_zipball_to_dir(bytes: &[u8], destination: &Path) -> Result<(), String
         if let Some(mode) = entry.unix_mode() {
             use std::os::unix::fs::PermissionsExt;
 
-            // zip strips setuid, setgid, and sticky bits from the archive's Unix mode.
+            // Strip setuid, setgid, and sticky bits explicitly; do not rely on the zip crate.
             output
-                .set_permissions(std::fs::Permissions::from_mode(mode))
+                .set_permissions(std::fs::Permissions::from_mode(mode & 0o777))
                 .map_err(|err| {
                     format!(
                         "failed to set permissions on curated plugins file {}: {err}",
