@@ -1,0 +1,90 @@
+name: Android compatibility native checks
+
+on:
+  pull_request:
+    paths:
+      - "codex-rs/**"
+      - "codex-cli/**"
+      - "third_party/v8/**"
+      - ".github/workflows/android-native-checks.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-native-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scoped-native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: codex-rs
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_BUILD_JOBS: "2"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      TERM: xterm-256color
+      COLORTERM: truecolor
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: 24
+      - name: Install native build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential pkg-config libcap-dev libasound2-dev bubblewrap
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      - uses: taiki-e/install-action@44c6d64aa62cd779e873306675c7a58e86d6d532 # v2.62.49
+        with:
+          tool: nextest@0.9.103
+      - uses: ./.github/actions/setup-rusty-v8
+        with:
+          target: x86_64-unknown-linux-gnu
+      - name: Build matching runtime helpers
+        id: helpers
+        run: |
+          cargo build --locked -p codex-rmcp-client --bin test_stdio_server --bin test_mcp_2026_stdio_server
+          cargo build --locked -p codex-code-mode-host --bin codex-code-mode-host
+          cargo build --locked -p codex-linux-sandbox --bin codex-linux-sandbox
+      - name: Run compatibility and security regression libraries
+        run: |
+          env -u NO_COLOR cargo nextest run --locked --lib --no-fail-fast --test-threads 2 \
+            -p codex-core -p codex-state -p codex-rollout -p codex-rmcp-client \
+            -p codex-core-plugins -p codex-app-server-transport \
+            -E 'not package(codex-core) | (package(codex-core) & (test(tools::sandboxing_tests) | test(approval) | test(denied_read)))'
+      - name: Preserve library report
+        if: always()
+        run: |
+          mkdir -p target/native-reports
+          if [[ -f target/nextest/default/junit.xml ]]; then
+            mv target/nextest/default/junit.xml target/native-reports/libraries.xml
+          fi
+      - name: Run real MCP child-process checks
+        if: ${{ !cancelled() && steps.helpers.outcome == 'success' }}
+        run: |
+          env -u NO_COLOR cargo nextest run --locked --no-fail-fast --test-threads 2 \
+            -p codex-rmcp-client --test process_group_cleanup --test stdio_descriptor_boundary \
+            --test mcp_2026_stdio --test foreign_stdio_cwd --test stdio_message_limits
+      - name: Preserve MCP report
+        if: always()
+        run: |
+          mkdir -p target/native-reports
+          if [[ -f target/nextest/default/junit.xml ]]; then
+            mv target/nextest/default/junit.xml target/native-reports/mcp.xml
+          fi
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: android-native-junit
+          path: codex-rs/target/native-reports/*.xml
+          if-no-files-found: warn

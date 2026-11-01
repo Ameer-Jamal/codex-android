@@ -620,3 +620,26 @@ registry mirroring remained on GitHub. Early access continues: physical-phone
 acceptance of this version, 16 KB support and shared-daemon recovery are pending.
 The scoped native regression evidence and test-fixture changes are recorded
 above; no complete native workspace test run is claimed.
+
+## Upstream 0.166.0 candidate — verification in progress
+
+The broad upstream CI failures are not evidence that native compilation failed:
+multiple Lint/Build and nextest archive jobs have no steps and report
+`Required runner group 'codex-android-runners' not found` (run 41266636123).
+The argument-comment-lint package also failed while resolving `master` in a
+dylint dependency. Import formatting was corrected in f724b4e80.
+
+A separate `Android compatibility native checks` workflow uses a standard
+GitHub-hosted Ubuntu runner, verified matching V8 artifacts, rebuilt helpers,
+and scoped regression libraries/MCP child-process tests. It avoids rebuilding
+the native workspace on the maintainer Mac and is not a substitute for the
+Android cross-build or exact-package Android 17 acceptance. Its results are
+pending; no native-suite success is claimed here.
+
+The upstream-carried crypto-bigint timing-side-channel exception
+(RUSTSEC-2026-0387) remains **pending review, not accepted** for Android.
+The zstd exception applicability claims (RUSTSEC-2026-0391, -0398, -0403, -0410)
+also remain pending review. Passing cargo-deny with those exceptions does not
+establish that the affected operations are unreachable. No merge or publication
+is authorized by these incomplete checks. Early access, physical acceptance of
+this candidate and 16 KB support remain unverified.
