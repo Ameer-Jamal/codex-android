@@ -3983,6 +3983,7 @@ async fn guardian_oversized_node_repl_policy_fails_closed_without_model_or_tool_
         ModelsResponse {
             models: vec![parent_model],
         },
+        codex_models_manager::ModelOrigin::ExplicitConfig,
     ));
 
     let (outcome, _) = run_guardian_review_session_for_test(

@@ -434,6 +434,7 @@ async fn approved_apply_patch_on_sandboxless_platform_executes_without_fs_sandbo
     let manager = SandboxManager::new();
     let cwd_uri = PathUri::from_abs_path(&path);
     let attempt = SandboxAttempt {
+        sandbox_override: SandboxOverride::NoOverride,
         sandbox: SandboxType::None,
         sandbox_requested: false,
         permissions: &permissions,
@@ -503,6 +504,7 @@ fn r2_unrelated_failure_after_bypass_is_not_a_sandbox_denial() {
     let manager = SandboxManager::new();
     let cwd_uri = PathUri::from_abs_path(&cwd);
     let attempt = SandboxAttempt {
+        sandbox_override: SandboxOverride::NoOverride,
         sandbox: SandboxType::None,
         sandbox_requested: false,
         permissions: &permissions,
