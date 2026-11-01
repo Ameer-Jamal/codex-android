@@ -610,15 +610,10 @@ async fn rollback_journal_preserves_committed_data_and_rolls_back_uncommitted_wr
         let _ = std::fs::remove_dir_all(home);
     });
     let sqlite = SqliteConfig::new_for_testing(home.as_path().abs());
+    // The Android fallback selects this same rollback-journal initialization path.
+    sqlite.is_nfs.set(/*value*/ true)?;
     let path = sqlite.logs_db_path();
-    let pool = sqlite
-        .open_read_write_pool_with_spec(
-            &path,
-            /*recover_spec*/ None,
-            /*telemetry_override*/ None,
-            super::WritableJournalMode::Rollback,
-        )
-        .await?;
+    let pool = sqlite.open_read_write_pool(&path).await?;
     sqlx::query("CREATE TABLE android_journal_test (value TEXT NOT NULL)")
         .execute(&pool)
         .await?;
@@ -631,14 +626,7 @@ async fn rollback_journal_preserves_committed_data_and_rolls_back_uncommitted_wr
         .await?;
     transaction.rollback().await?;
     pool.close().await;
-    let pool = sqlite
-        .open_read_write_pool_with_spec(
-            &path,
-            /*recover_spec*/ None,
-            /*telemetry_override*/ None,
-            super::WritableJournalMode::Rollback,
-        )
-        .await?;
+    let pool = sqlite.open_read_write_pool(&path).await?;
     let journal: String = sqlx::query_scalar("PRAGMA journal_mode")
         .fetch_one(&pool)
         .await?;
