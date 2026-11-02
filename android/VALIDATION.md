@@ -660,3 +660,36 @@ information/incremental compilation disabled and removed that directory afterwar
 This verifies host PTY behavior; Linux pidfd/mount-watcher behavior remains part
 of cloud compilation/native checks and Android acceptance. Local cargo-deny
 reported advisories, bans, licenses and sources OK under the remaining policies.
+
+### Verified upstream candidate and emulator harness repairs
+
+The [native run](https://github.com/Ameer-Jamal/codex-android/actions/runs/41464605879)
+on `2034c2e7a2195c6e7a426bcb7a945ffb99447c06` passed all 1,569 selected
+library tests and 12 MCP integration tests. The previously aborting
+`spawn_agent_uses_explorer_role_and_preserves_approval_policy` passed with the
+upstream 8 MiB stack setting. This is scoped evidence, not a full workspace run.
+The [Android build](https://github.com/Ameer-Jamal/codex-android/actions/runs/41464605900)
+passed checks, dependency policy and native compilation for that same source.
+
+Its exact package (SHA-256
+`824cb264760a508be5912e47274140d1ad152feaea45bc2c78821399e2099472`)
+passed clean API 37 ARM64, 4 KB emulator acceptance with the repaired harness.
+Report: `upstream-1660/emulator-upgrade/0.166.0-android.1-1793652740367704000.txt`
+in the external release logs, ending in `SUITE_EXIT=0`. Both command launchers,
+first-launch setup, diagnostics, native shell/patch/tool-result round trips,
+persisted session/resume, JavaScript helper, transient-response retry and
+uninstall/reinstall preservation passed. No live model requests were made.
+
+Two harness failures occurred before Codex installation: a focused Termux
+Activity could precede an input-ready shell, and current Node could not link
+against the old APK bootstrap's libc++. The runner now retries only its
+idempotent readiness probe, never the install/test suite; it also upgrades
+Termux packages before installing Node, matching the README. All 42 Android
+Python tests passed, including bounded probe-retry/no-ack fixtures.
+
+The harness changes do not alter the npm package. A successful exact main build
+and checksum-bound API 37 acceptance remain mandatory before publication.
+Physical-phone and 16 KB acceptance remain unverified. The crypto-bigint release
+decision remains open; the same 0.5.5 dependency is also present in the previous
+0.162.1-android.2 release's lockfile. Its continued presence is not evidence that
+it is safe, and the candidate has not been published.

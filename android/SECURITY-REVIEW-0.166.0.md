@@ -45,7 +45,7 @@ safety of every consumer.
 
 The advisory only lists >=0.7.6 as patched. That is incompatible with the current
 elliptic-curve dependency constraint, so changing one lockfile version is not a
-valid remedy. A broader dependency migration, reviewed upstream backport, or an
+valid remedy. The prior 0.162.1-android.2 release also used crypto-bigint 0.5.5. A broader dependency migration, reviewed upstream backport, or an
 explicit residual-risk decision remains necessary. No Android-specific side-channel
 analysis or constant-time binary verification has been performed.
 

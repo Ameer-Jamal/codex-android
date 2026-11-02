@@ -178,5 +178,65 @@ class EmulatorSetupTests(unittest.TestCase):
         self.assertEqual(sum("run-as" in call for call in calls), 2)
 
 
+class TerminalProbeTests(unittest.TestCase):
+    def test_retries_probe_when_focused_activity_has_no_ready_shell(self):
+        from unittest.mock import patch
+        from emulator_support import acknowledge_terminal_probe
+
+        clock = [0]
+        attempts = []
+
+        def fake_run(adb, serial, *args, **kwargs):
+            ready = len(attempts) >= 2
+            return subprocess.CompletedProcess(
+                args, 0 if ready else 1, "READY\n" if ready else "", ""
+            )
+
+        with (
+            patch("emulator_support.run", side_effect=fake_run),
+            patch(
+                "emulator_support.dispatch",
+                side_effect=lambda *args: attempts.append(args),
+            ),
+            patch("emulator_support.time.monotonic", side_effect=lambda: clock[0]),
+            patch(
+                "emulator_support.time.sleep",
+                side_effect=lambda seconds: clock.__setitem__(0, clock[0] + seconds),
+            ),
+        ):
+            acknowledge_terminal_probe(
+                "adb", "emulator-5580", "/unique-run", timeout=20
+            )
+        self.assertEqual(len(attempts), 2)
+        self.assertTrue(
+            all(args[-1] == "bash /unique-run/ready.sh" for args in attempts)
+        )
+
+    def test_never_starts_suite_when_probe_does_not_acknowledge(self):
+        from unittest.mock import patch
+        from emulator_support import acknowledge_terminal_probe
+
+        clock = [0]
+        with (
+            patch(
+                "emulator_support.run",
+                return_value=subprocess.CompletedProcess([], 1, "", ""),
+            ),
+            patch("emulator_support.dispatch") as dispatch,
+            patch("emulator_support.time.monotonic", side_effect=lambda: clock[0]),
+            patch(
+                "emulator_support.time.sleep",
+                side_effect=lambda seconds: clock.__setitem__(0, clock[0] + seconds),
+            ),
+        ):
+            with self.assertRaisesRegex(ValueError, "refusing to start tests"):
+                acknowledge_terminal_probe(
+                    "adb", "emulator-5580", "/unique-run", timeout=7
+                )
+        self.assertTrue(
+            all(call.args[-1].endswith("/ready.sh") for call in dispatch.call_args_list)
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

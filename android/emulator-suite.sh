@@ -25,8 +25,11 @@ getprop ro.build.version.sdk
 printf 'Page size: '
 /system/bin/getconf PAGESIZE
 # Bootstrap has finished before the host injects this command.
-apt_options=(-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
+apt_options=(-o Acquire::Retries=3 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Dpkg::Options::=--force-confold)
 apt-get "${apt_options[@]}" update
+# Match the README: upgrade the old APK bootstrap before installing current Node.
+# Otherwise Node can link against symbols absent from the bootstrap's libc++.
+apt-get "${apt_options[@]}" upgrade -y
 apt-get "${apt_options[@]}" install -y nodejs-lts
 node --version
 if [[ -n ${3:-} ]]; then
