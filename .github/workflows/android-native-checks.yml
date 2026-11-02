@@ -61,6 +61,8 @@ jobs:
           cargo build --locked -p codex-code-mode-host --bin codex-code-mode-host
           cargo build --locked -p codex-linux-sandbox --bin codex-linux-sandbox
       - name: Run compatibility and security regression libraries
+        env:
+          RUST_MIN_STACK: "8388608" # 8 MiB, as in upstream rust-ci
         run: |
           env -u NO_COLOR cargo nextest run --locked --lib --no-fail-fast --test-threads 2 \
             -p codex-core -p codex-state -p codex-rollout -p codex-rmcp-client \
