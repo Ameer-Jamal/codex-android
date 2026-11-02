@@ -66,7 +66,7 @@ jobs:
         run: |
           env -u NO_COLOR cargo nextest run --locked --lib --no-fail-fast --test-threads 2 \
             -p codex-core -p codex-state -p codex-rollout -p codex-rmcp-client \
-            -p codex-core-plugins -p codex-app-server-transport \
+            -p codex-core-plugins -p codex-app-server-transport -p codex-utils-pty \
             -E 'not package(codex-core) | (package(codex-core) & (test(tools::sandboxing_tests) | test(approval) | test(denied_read)))'
       - name: Preserve library report
         if: always()

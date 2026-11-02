@@ -528,7 +528,7 @@ thiserror = "2.0.17"
 tikv-jemallocator = "=0.7.0"
 time = "0.3.47"
 tiny_http = "0.12"
-tokio = "1"
+tokio = "1.53.3"
 tokio-rustls = "0.26.4"
 tokio-stream = "0.1.18"
 tokio-test = "0.4"
@@ -579,7 +579,7 @@ zip = { version = "9.0.0", default-features = false, features = [
     "xz",
     "zstd",
 ] }
-zstd = "0.13"
+zstd = "0.13.4"
 
 wiremock = "0.6"
 zeroize = "1.8.2"

@@ -643,3 +643,20 @@ also remain pending review. Passing cargo-deny with those exceptions does not
 establish that the affected operations are unreachable. No merge or publication
 is authorized by these incomplete checks. Early access, physical acceptance of
 this candidate and 16 KB support remain unverified.
+
+### November 2 dependency review follow-up
+
+The [security review](SECURITY-REVIEW-0.166.0.md) replaces four zstd exceptions
+with compatible patched releases and updates Tokio for its Unix I/O-safety
+advisory. Advisory checks passed locally with existing unrelated exceptions;
+the crypto-bigint exception remains unresolved and is not accepted for release.
+The stack-size rerun on 32bf679ff was still in progress when this follow-up was
+prepared; no native success or emulator acceptance is claimed for the new patches.
+Final-source cloud checks and exact-package Android 17 acceptance must be rerun.
+
+All 55 `codex-utils-pty` library tests passed on ARM64 macOS after the Tokio
+registration migration. The run used a temporary target directory with debug
+information/incremental compilation disabled and removed that directory afterward.
+This verifies host PTY behavior; Linux pidfd/mount-watcher behavior remains part
+of cloud compilation/native checks and Android acceptance. Local cargo-deny
+reported advisories, bans, licenses and sources OK under the remaining policies.

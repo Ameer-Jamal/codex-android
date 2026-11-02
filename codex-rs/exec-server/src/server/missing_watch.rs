@@ -113,7 +113,11 @@ fn watch_missing(
         .read(true)
         .custom_flags(libc::O_NONBLOCK)
         .open("/proc/self/mounts")
-        .and_then(|file| AsyncFd::with_interest(file, Interest::PRIORITY))
+        .and_then(|file| {
+            // SAFETY: AsyncFd owns the File; its descriptor stays open and unchanged.
+            unsafe { AsyncFd::register_with_interest(file, Interest::PRIORITY) }
+                .map_err(std::io::Error::from)
+        })
         .inspect_err(
             |error| tracing::debug!(%error, "mount changes unavailable for missing-path watch"),
         )
