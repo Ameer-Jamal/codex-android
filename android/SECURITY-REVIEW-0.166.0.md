@@ -49,6 +49,15 @@ valid remedy. The prior 0.162.1-android.2 release also used crypto-bigint 0.5.5.
 explicit residual-risk decision remains necessary. No Android-specific side-channel
 analysis or constant-time binary verification has been performed.
 
-**Recommendation: hold publication.** The existing upstream-carried crypto
-exception is not an Android risk acceptance. Passing cargo-deny with that exception
-and passing functional tests do not resolve this issue.
+## Maintainer decision — November 3, 2026
+
+The maintainer explicitly authorized proceeding with the early-access release
+with this crypto-bigint risk documented, after reviewing the candidate's test
+results and the unresolved advisory. This accepts residual risk for this release;
+it does not resolve the advisory or establish constant-time behavior on Android.
+The exception's dependency migration/removal condition remains in place.
+
+Proceed only through the normal main-build, exact-artifact Android 17 acceptance,
+OIDC publication and registry/GitHub checksum verification gates. Physical-device
+and 16 KB acceptance remain unverified. Future releases require reassessing this
+exception rather than treating this decision as permanent acceptance.

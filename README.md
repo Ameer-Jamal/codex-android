@@ -135,6 +135,11 @@ data remains in that directory; remove it separately only if you want to erase i
 
 ## Troubleshooting and limitations
 
+- **Known upstream crypto risk:** this early-access release retains crypto-bigint
+  0.5.5, affected by a timing-side-channel advisory. The maintainer accepted this
+  documented residual risk for the 0.166.0 Android release; it is not a complete
+  security fix. See the [dependency security review](android/SECURITY-REVIEW-0.166.0.md).
+
 - **Unsupported platform:** install from inside ARM64 Termux, with Node.js 22+.
 - **Permission or storage errors:** keep projects in `~/`, rather than shared
   Android storage such as `/sdcard`. Shared storage can prevent programs from

@@ -693,3 +693,14 @@ Physical-phone and 16 KB acceptance remain unverified. The crypto-bigint release
 decision remains open; the same 0.5.5 dependency is also present in the previous
 0.162.1-android.2 release's lockfile. Its continued presence is not evidence that
 it is safe, and the candidate has not been published.
+
+### Maintainer release decision — November 3, 2026
+
+The maintainer explicitly approved proceeding toward the 0.166.0 early-access
+release with the unresolved upstream crypto-bigint risk documented. This
+supersedes the earlier publication hold based on that decision being pending;
+it does not claim the advisory is fixed. README and release notes disclose it.
+The normal main-build, exact-artifact emulator and OIDC/checksum gates remain
+mandatory. Candidate 2e11aa07a passed its wrapper/security/Android build and scoped
+native workflows (41523562946 and 41523562830). Earlier exact candidate emulator
+acceptance is recorded above; main-build acceptance remains pending.
