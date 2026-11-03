@@ -23,7 +23,7 @@ impl MemoryWorkspaceLock {
             .create(true)
             .truncate(false)
             .open(memory_root.with_extension("lock"))?;
-        match file.try_lock() {
+        match codex_keyring_store::file_lock::try_lock_exclusive(&file) {
             Ok(()) => Ok(Self { _file: file }),
             Err(TryLockError::WouldBlock) => Err(io::Error::new(
                 io::ErrorKind::WouldBlock,
@@ -31,5 +31,21 @@ impl MemoryWorkspaceLock {
             )),
             Err(TryLockError::Error(error)) => Err(error),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn workspace_lock_excludes_another_owner_and_releases_on_drop() {
+        let temp = tempfile::tempdir().unwrap();
+        let root = temp.path().join("memories");
+        let owner = MemoryWorkspaceLock::try_acquire(&root).unwrap();
+        let contender = MemoryWorkspaceLock::try_acquire(&root).err().unwrap();
+        assert_eq!(contender.kind(), io::ErrorKind::WouldBlock);
+        drop(owner);
+        MemoryWorkspaceLock::try_acquire(&root).unwrap();
     }
 }

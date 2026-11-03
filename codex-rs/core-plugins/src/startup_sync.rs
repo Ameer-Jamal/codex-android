@@ -176,8 +176,7 @@ fn lock_curated_plugins_startup_sync(codex_home: &Path) -> Result<File, String> 
         .truncate(false)
         .open(&lock_path)
         .map_err(|err| format!("failed to open curated plugins sync lock: {err}"))?;
-    lock_file
-        .lock()
+    codex_keyring_store::file_lock::lock_exclusive(&lock_file)
         .map_err(|err| format!("failed to lock curated plugins sync: {err}"))?;
     Ok(lock_file)
 }

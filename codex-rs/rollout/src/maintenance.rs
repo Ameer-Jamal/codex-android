@@ -27,7 +27,7 @@ pub struct RolloutMaintenanceGuard {
 impl Drop for RolloutMaintenanceGuard {
     fn drop(&mut self) {
         // Release the lock even if a child inherited the file before exec.
-        let _ = self.file.unlock();
+        let _ = codex_keyring_store::file_lock::unlock(&self.file);
     }
 }
 
@@ -44,7 +44,7 @@ pub fn try_acquire_rollout_maintenance_lock(
         .truncate(false)
         .open(directory.join(ROLLOUT_MAINTENANCE_LOCK))?;
 
-    match file.try_lock() {
+    match codex_keyring_store::file_lock::try_lock_exclusive(&file) {
         Ok(()) => Ok(Some(RolloutMaintenanceGuard { file })),
         Err(std::fs::TryLockError::WouldBlock) => Ok(None),
         Err(std::fs::TryLockError::Error(error)) => Err(error),

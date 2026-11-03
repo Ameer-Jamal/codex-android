@@ -132,7 +132,7 @@ async fn with_session_index_lock(
             .open(lock_path)?;
         let deadline = Instant::now() + Duration::from_secs(/*secs*/ 30);
         loop {
-            match file_lock.try_lock() {
+            match codex_keyring_store::file_lock::try_lock_exclusive(&file_lock) {
                 Ok(()) => break,
                 Err(std::fs::TryLockError::WouldBlock) if Instant::now() < deadline => {
                     std::thread::sleep(Duration::from_millis(/*millis*/ 50));

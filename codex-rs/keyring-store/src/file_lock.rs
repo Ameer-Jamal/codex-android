@@ -146,6 +146,22 @@ mod tests {
     }
 
     #[test]
+    fn explicit_unlock_releases_a_borrowed_handle() {
+        let _serial = TEST_LOCK.lock().unwrap();
+        let owner = tempfile::NamedTempFile::new().unwrap();
+        let contender = File::open(owner.path()).unwrap();
+        flock(owner.as_file(), libc::LOCK_SH).unwrap();
+        assert!(matches!(
+            try_flock(&contender, libc::LOCK_EX),
+            Err(TryLockError::WouldBlock)
+        ));
+        flock(owner.as_file(), libc::LOCK_UN).unwrap();
+        try_flock(&contender, libc::LOCK_EX).unwrap();
+        // The original handle remains open: this tests explicit unlock, not close.
+        assert!(owner.as_file().metadata().is_ok());
+    }
+
+    #[test]
     fn invalid_lock_operation_is_an_error() {
         let _serial = TEST_LOCK.lock().unwrap();
         let file = tempfile::tempfile().unwrap();

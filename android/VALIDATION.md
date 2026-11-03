@@ -754,3 +754,18 @@ Physical-phone login acceptance of this hotfix remains pending. Early-access,
 16 KB compatibility and the previously documented crypto-bigint residual risk
 remain unchanged. A temporary rollback is `npm i -g codex-android@0.162.1-android.2`;
 settings and login files should not be deleted to address this regression.
+
+### Expanded file-lock review before hotfix publication
+
+Review of the follow-up branch found additional unguarded upstream locks beyond
+credential saving. The candidate now routes user-verification lifecycle locks,
+managed-CA leases/cleanup, daemon startup/unlock, memory-workspace ownership,
+rollout maintenance/session indexing, mention preferences and curated-plugin sync
+through the Android-supported helper. Existing historical Unsupported fallbacks
+remain in place. A file-lock source-pattern inventory runs in Android CI and is
+explicitly documented as a tripwire rather than complete Rust type analysis.
+Native coverage now includes user verification, network proxy, memory-workspace
+contention and mention preferences. All evidence for the earlier dc2e1fd35 build
+applies only to that commit; this expanded candidate requires a new exact build,
+emulator acceptance and phone check. No expanded-candidate publication or
+physical-device acceptance is claimed here.

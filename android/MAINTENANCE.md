@@ -369,3 +369,22 @@ env -u NO_COLOR TERM=xterm-256color COLORTERM=truecolor CARGO_BUILD_JOBS=2 \
 Keep emulator acceptance separate from Rust compilation to reduce host resource
 contention. Native fixture checks and emulator tests use synthetic responses;
 they do not require a paid model request.
+
+## Android OS API review on each upstream merge
+
+Compare new upstream code as well as retained fork edits. Inventory new file-lock,
+SQLite journal, Unix-socket, process identity, filesystem permission and sandbox
+calls; check whether Android executes a real platform implementation. Rust 1.95
+standard `File` locking returns Unsupported on Android before any syscall.
+Use `codex_keyring_store::file_lock` for new file-lock operations, preserving
+shared/exclusive semantics, genuine errors, ownership lifetimes and deadlines.
+Do not bypass credential locking when Unsupported is returned.
+
+`python3 android/check_file_locks.py` is a required source-pattern tripwire in
+Android CI. Its reviewed exceptions retain existing explicit fallbacks. It is
+not type analysis: differently named handles and newly introduced OS APIs still
+need review. Extend the inventory deliberately; do not blanket-exempt new files.
+The Android 17 acceptance suite must exercise synthetic credential save,
+replacement, status and logout through the actual packaged native binary.
+Browser/device-code host fixtures supplement this; they do not prove Android
+browser interaction. Record physical-phone login separately before claiming it.

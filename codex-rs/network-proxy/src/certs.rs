@@ -760,7 +760,7 @@ fn remove_inactive_managed_ca_certificate(certificate_path: &Path) {
     let Ok(lock_file) = open_managed_ca_lock(&lock_path) else {
         return;
     };
-    match lock_file.try_lock() {
+    match codex_keyring_store::file_lock::try_lock_exclusive(&lock_file) {
         Ok(()) => {}
         Err(std::fs::TryLockError::WouldBlock) => return,
         Err(err) => {

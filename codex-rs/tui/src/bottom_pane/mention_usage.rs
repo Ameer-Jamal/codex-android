@@ -169,7 +169,7 @@ fn persist_selection(path: &Path, identity: String) -> io::Result<()> {
         .open(path.with_extension("lock"))?;
     let deadline = Instant::now() + LOCK_TIMEOUT;
     loop {
-        match lock_file.try_lock() {
+        match codex_keyring_store::file_lock::try_lock_exclusive(&lock_file) {
             Ok(()) => break,
             Err(std::fs::TryLockError::WouldBlock) if Instant::now() < deadline => {
                 std::thread::sleep(LOCK_RETRY_INTERVAL);
