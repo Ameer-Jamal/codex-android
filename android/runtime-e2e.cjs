@@ -153,6 +153,58 @@ async function main() {
     }
   }
   try {
+    // API-key, browser and device-code login all use save_auth/lock_for_write.
+    // Exercise that native persistence path on Android, never a real account.
+    const authHome = path.join(root, "credential-test-home");
+    fs.mkdirSync(authHome);
+    async function authCommand(args, input = "") {
+      const child = spawn(
+        "codex",
+        ["-c", 'cli_auth_credentials_store="file"', ...args],
+        {
+          cwd: project,
+          env: { ...process.env, CODEX_HOME: authHome },
+          stdio: ["pipe", "pipe", "pipe"],
+        },
+      );
+      let stderr = "";
+      child.stdout.resume();
+      child.stderr.on("data", (chunk) => {
+        stderr += chunk;
+      });
+      const timer = setTimeout(() => child.kill("SIGKILL"), 30000);
+      child.stdin.on("error", () => {});
+      child.stdin.end(input);
+      try {
+        const code = await new Promise((resolve, reject) => {
+          child.once("error", reject);
+          child.once("close", resolve);
+        });
+        assert.equal(
+          code,
+          0,
+          `Credential operation failed: ${stderr.slice(-1000)}`,
+        );
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+    for (const key of [
+      "sk-android-e2e-synthetic-first",
+      "sk-android-e2e-synthetic-replacement",
+    ]) {
+      await authCommand(["login", "--with-api-key"], `${key}\n`);
+      const saved = JSON.parse(
+        fs.readFileSync(path.join(authHome, "auth.json"), "utf8"),
+      );
+      assert.equal(saved.OPENAI_API_KEY, key, "credential did not persist");
+      await authCommand(["login", "status"]);
+    }
+    await authCommand(["logout"]);
+    assert.equal(fs.existsSync(path.join(authHome, "auth.json")), false);
+    console.log(
+      "PASS: native credential locking, save, replacement, status and logout (synthetic credentials only)",
+    );
     const first = await invoke(["Android fixture first turn"]);
     if (process.env.CODEX_ANDROID_EXPECT_INSTRUCTIONS === "1") {
       assert(

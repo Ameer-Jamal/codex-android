@@ -199,7 +199,7 @@ pub(super) trait AuthStorageBackend: Debug + Send + Sync {
                 .create(true)
                 .truncate(false)
                 .open(home.join("auth.lock"))?;
-            file.lock()?;
+            codex_keyring_store::file_lock::lock_exclusive(&file)?;
             Some(file)
         } else {
             None

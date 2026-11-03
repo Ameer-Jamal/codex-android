@@ -3897,9 +3897,11 @@ name = "codex-keyring-store"
 version = "0.166.0"
 dependencies = [
  "keyring",
+ "libc",
  "pretty_assertions",
  "secret-service",
  "security-framework 3.5.1",
+ "tempfile",
  "tracing",
 ]
 

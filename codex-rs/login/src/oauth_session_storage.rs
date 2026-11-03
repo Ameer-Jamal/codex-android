@@ -31,7 +31,7 @@ pub(super) async fn lock_credentials(codex_home: &Path) -> io::Result<File> {
         .open(path)?;
     tokio::time::timeout(Duration::from_secs(/*secs*/ 60), async {
         loop {
-            match file.try_lock() {
+            match codex_keyring_store::file_lock::try_lock_exclusive(&file) {
                 Ok(()) => return Ok(()),
                 Err(TryLockError::WouldBlock) => {
                     tokio::time::sleep(Duration::from_millis(/*millis*/ 50)).await

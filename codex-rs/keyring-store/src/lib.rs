@@ -1,3 +1,5 @@
+pub mod file_lock;
+
 use keyring::Entry;
 use keyring::Error as KeyringError;
 use std::error::Error;

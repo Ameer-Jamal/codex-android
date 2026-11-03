@@ -729,3 +729,28 @@ physical-device acceptance of this version, Android/OEM lifecycle behavior,
 16 KB support and shared-daemon recovery remain unverified. Local package
 downloads were confined to authorized emulator testing; publication and registry
 mirroring stayed on GitHub.
+
+## Login persistence hotfix candidate: 0.166.0-android.2
+
+A physical-device report exposed a release-blocking coverage gap in android.1:
+ChatGPT browser and device-code sign-in completed, but saving credentials failed
+with `persist_failed: lock() not supported`. Rust 1.95's standard `File::lock`
+implementation excludes Android. The newly introduced upstream `save_auth`
+transaction therefore failed before writing credentials. Previous emulator
+acceptance used an unauthenticated synthetic provider and did not test saving
+credentials; its success did not establish sign-in acceptance.
+
+The hotfix uses Android's `flock` syscall for credential transaction locks,
+including gateway and MCP OAuth locks. Other platforms retain standard-library
+locking. In-process serialization, cross-process shared/exclusive exclusion,
+retry deadlines and genuine errors remain enforced; no lock is silently skipped.
+The emulator suite now saves, replaces, reloads and removes synthetic API-key
+credentials through the same native `save_auth` transaction used by browser and
+device-code login. Host CI also exercises the existing browser and device-code
+OAuth fixtures. No real account credentials or model calls are used.
+
+Build, native CI, exact-package emulator and publication results are pending.
+Physical-phone login acceptance of this hotfix remains pending. Early-access,
+16 KB compatibility and the previously documented crypto-bigint residual risk
+remain unchanged. A temporary rollback is `npm i -g codex-android@0.162.1-android.2`;
+settings and login files should not be deleted to address this regression.

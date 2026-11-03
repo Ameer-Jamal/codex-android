@@ -97,4 +97,4 @@ for iteration in 1 2 3; do
 done
 echo 'PASS: uninstall/reinstall preserves test settings; repeated startup works'
 node "$report_dir/runtime-e2e.cjs"
-echo 'No live model requests or login performed. Interactive/device lifecycle acceptance remains separate.'
+echo 'No live model requests or real-account login performed; synthetic credential persistence tested. Interactive/device lifecycle acceptance remains separate.'
