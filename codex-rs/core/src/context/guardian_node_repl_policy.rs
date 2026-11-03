@@ -1,6 +1,8 @@
 use super::ContextualUserFragment;
 use codex_prompts::ResolvedModelMessages;
+use codex_protocol::models::ContentItem;
 use codex_protocol::models::ContentItemKind;
+use codex_protocol::models::input_text;
 use codex_protocol::openai_models::ModelMessageTextTooLong;
 use codex_protocol::openai_models::validate_model_message_text;
 
@@ -39,8 +41,8 @@ impl ContextualUserFragment for GuardianNodeReplPolicy {
         ("", "")
     }
 
-    fn body(&self) -> String {
-        self.policy.clone()
+    fn body(&self) -> ContentItem {
+        input_text(self.policy.clone())
     }
 }
 
@@ -82,7 +84,9 @@ mod tests {
         assert_eq!(
             GuardianNodeReplPolicy::from_messages("test-model", ResolvedModelMessages::bundled())
                 .expect("missing policy should use the built-in")
-                .body(),
+                .body()
+                .into_text()
+                .expect("policy should be text"),
             codex_prompts::ResolvedModelMessages::bundled()
                 .auto_review()
                 .node_repl_policy
@@ -97,7 +101,9 @@ mod tests {
                 ResolvedModelMessages::from_model(&empty),
             )
             .expect("empty node REPL policy should pass")
-            .body(),
+            .body()
+            .into_text()
+            .expect("policy should be text"),
             ""
         );
 
@@ -110,6 +116,13 @@ mod tests {
             ResolvedModelMessages::from_model(&exact),
         )
         .expect("node REPL policy at the cap should pass");
-        assert_eq!(policy.body().len(), 8 * 1024);
+        assert_eq!(
+            policy
+                .body()
+                .into_text()
+                .expect("policy should be text")
+                .len(),
+            8 * 1024
+        );
     }
 }

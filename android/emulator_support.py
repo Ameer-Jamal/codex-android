@@ -220,3 +220,32 @@ def dispatch(adb, serial, command):
     # Callers only pass fixed paths and validated version arguments, no shell metacharacters.
     run(adb, serial, "shell", "input", "text", command.replace(" ", "%s"))
     run(adb, serial, "shell", "input", "keyevent", "66")
+
+
+def acknowledge_terminal_probe(adb, serial, remote, *, timeout=120):
+    """Retry only the idempotent readiness script; never replay the test suite."""
+    deadline = time.monotonic() + timeout
+    next_dispatch = 0
+    while time.monotonic() < deadline:
+        if time.monotonic() >= next_dispatch:
+            # A focused Activity can appear before its terminal session accepts input.
+            # Complete any partial probe line before trying the unique ready script.
+            run(adb, serial, "shell", "input", "keyevent", "66")
+            dispatch(adb, serial, f"bash {remote}/ready.sh")
+            next_dispatch = time.monotonic() + 5
+        ready = run(
+            adb,
+            serial,
+            "shell",
+            "run-as",
+            "com.termux",
+            "cat",
+            f"{remote}/ready.txt",
+            check=False,
+        )
+        if ready.returncode == 0 and ready.stdout.strip() == "READY":
+            return
+        time.sleep(1)
+    raise ValueError(
+        "Termux did not acknowledge the readiness probe; refusing to start tests"
+    )

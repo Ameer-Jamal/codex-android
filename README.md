@@ -12,7 +12,7 @@ Real-device testing is still in progress. This is a community project based on
 [OpenAI Codex](https://github.com/openai/codex), independently maintained and not
 affiliated with OpenAI.
 
-This release bundles [Codex 0.162.1](https://github.com/openai/codex/releases/tag/rust-v0.162.1)
+This release bundles [Codex 0.166.0](https://github.com/openai/codex/releases/tag/rust-v0.166.0)
 with the Android setup and diagnostics commands. Upstream releases are imported
 and tested before publishing an Android update; installed packages update when
 you run `npm i -g codex-android`.
@@ -134,6 +134,11 @@ This deletes the default data directory. If you set a custom `CODEX_HOME`, its
 data remains in that directory; remove it separately only if you want to erase it.
 
 ## Troubleshooting and limitations
+
+- **Known upstream crypto risk:** this early-access release retains crypto-bigint
+  0.5.5, affected by a timing-side-channel advisory. The maintainer accepted this
+  documented residual risk for the 0.166.0 Android release; it is not a complete
+  security fix. See the [dependency security review](android/SECURITY-REVIEW-0.166.0.md).
 
 - **Unsupported platform:** install from inside ARM64 Termux, with Node.js 22+.
 - **Permission or storage errors:** keep projects in `~/`, rather than shared

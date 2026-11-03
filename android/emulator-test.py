@@ -10,6 +10,7 @@ from pathlib import Path
 from emulator_registry import CandidateRegistry
 from emulator_support import (
     dispatch,
+    acknowledge_terminal_probe,
     ensure_emulator,
     official_termux,
     run,
@@ -108,26 +109,7 @@ def execute(args, adb):
                 f"tcp:{registry.port}",
             )
             source = f" {registry.url}"
-        dispatch(adb, args.serial, f"bash {remote}/ready.sh")
-        deadline = time.monotonic() + 30
-        while time.monotonic() < deadline:
-            ready = run(
-                adb,
-                args.serial,
-                "shell",
-                "run-as",
-                "com.termux",
-                "cat",
-                f"{remote}/ready.txt",
-                check=False,
-            )
-            if ready.returncode == 0 and ready.stdout.strip() == "READY":
-                break
-            time.sleep(1)
-        else:
-            raise ValueError(
-                "Termux did not acknowledge the readiness probe; refusing to start tests"
-            )
+        acknowledge_terminal_probe(adb, args.serial, remote)
         dispatch(
             adb,
             args.serial,

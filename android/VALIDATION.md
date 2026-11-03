@@ -620,3 +620,87 @@ registry mirroring remained on GitHub. Early access continues: physical-phone
 acceptance of this version, 16 KB support and shared-daemon recovery are pending.
 The scoped native regression evidence and test-fixture changes are recorded
 above; no complete native workspace test run is claimed.
+
+## Upstream 0.166.0 candidate — verification in progress
+
+The broad upstream CI failures are not evidence that native compilation failed:
+multiple Lint/Build and nextest archive jobs have no steps and report
+`Required runner group 'codex-android-runners' not found` (run 41266636123).
+The argument-comment-lint package also failed while resolving `master` in a
+dylint dependency. Import formatting was corrected in f724b4e80.
+
+A separate `Android compatibility native checks` workflow uses a standard
+GitHub-hosted Ubuntu runner, verified matching V8 artifacts, rebuilt helpers,
+and scoped regression libraries/MCP child-process tests. It avoids rebuilding
+the native workspace on the maintainer Mac and is not a substitute for the
+Android cross-build or exact-package Android 17 acceptance. Its results are
+pending; no native-suite success is claimed here.
+
+The upstream-carried crypto-bigint timing-side-channel exception
+(RUSTSEC-2026-0387) remains **pending review, not accepted** for Android.
+The zstd exception applicability claims (RUSTSEC-2026-0391, -0398, -0403, -0410)
+also remain pending review. Passing cargo-deny with those exceptions does not
+establish that the affected operations are unreachable. No merge or publication
+is authorized by these incomplete checks. Early access, physical acceptance of
+this candidate and 16 KB support remain unverified.
+
+### November 2 dependency review follow-up
+
+The [security review](SECURITY-REVIEW-0.166.0.md) replaces four zstd exceptions
+with compatible patched releases and updates Tokio for its Unix I/O-safety
+advisory. Advisory checks passed locally with existing unrelated exceptions;
+the crypto-bigint exception remains unresolved and is not accepted for release.
+The stack-size rerun on 32bf679ff was still in progress when this follow-up was
+prepared; no native success or emulator acceptance is claimed for the new patches.
+Final-source cloud checks and exact-package Android 17 acceptance must be rerun.
+
+All 55 `codex-utils-pty` library tests passed on ARM64 macOS after the Tokio
+registration migration. The run used a temporary target directory with debug
+information/incremental compilation disabled and removed that directory afterward.
+This verifies host PTY behavior; Linux pidfd/mount-watcher behavior remains part
+of cloud compilation/native checks and Android acceptance. Local cargo-deny
+reported advisories, bans, licenses and sources OK under the remaining policies.
+
+### Verified upstream candidate and emulator harness repairs
+
+The [native run](https://github.com/Ameer-Jamal/codex-android/actions/runs/41464605879)
+on `2034c2e7a2195c6e7a426bcb7a945ffb99447c06` passed all 1,569 selected
+library tests and 12 MCP integration tests. The previously aborting
+`spawn_agent_uses_explorer_role_and_preserves_approval_policy` passed with the
+upstream 8 MiB stack setting. This is scoped evidence, not a full workspace run.
+The [Android build](https://github.com/Ameer-Jamal/codex-android/actions/runs/41464605900)
+passed checks, dependency policy and native compilation for that same source.
+
+Its exact package (SHA-256
+`824cb264760a508be5912e47274140d1ad152feaea45bc2c78821399e2099472`)
+passed clean API 37 ARM64, 4 KB emulator acceptance with the repaired harness.
+Report: `upstream-1660/emulator-upgrade/0.166.0-android.1-1793652740367704000.txt`
+in the external release logs, ending in `SUITE_EXIT=0`. Both command launchers,
+first-launch setup, diagnostics, native shell/patch/tool-result round trips,
+persisted session/resume, JavaScript helper, transient-response retry and
+uninstall/reinstall preservation passed. No live model requests were made.
+
+Two harness failures occurred before Codex installation: a focused Termux
+Activity could precede an input-ready shell, and current Node could not link
+against the old APK bootstrap's libc++. The runner now retries only its
+idempotent readiness probe, never the install/test suite; it also upgrades
+Termux packages before installing Node, matching the README. All 42 Android
+Python tests passed, including bounded probe-retry/no-ack fixtures.
+
+The harness changes do not alter the npm package. A successful exact main build
+and checksum-bound API 37 acceptance remain mandatory before publication.
+Physical-phone and 16 KB acceptance remain unverified. The crypto-bigint release
+decision remains open; the same 0.5.5 dependency is also present in the previous
+0.162.1-android.2 release's lockfile. Its continued presence is not evidence that
+it is safe, and the candidate has not been published.
+
+### Maintainer release decision — November 3, 2026
+
+The maintainer explicitly approved proceeding toward the 0.166.0 early-access
+release with the unresolved upstream crypto-bigint risk documented. This
+supersedes the earlier publication hold based on that decision being pending;
+it does not claim the advisory is fixed. README and release notes disclose it.
+The normal main-build, exact-artifact emulator and OIDC/checksum gates remain
+mandatory. Candidate 2e11aa07a passed its wrapper/security/Android build and scoped
+native workflows (41523562946 and 41523562830). Earlier exact candidate emulator
+acceptance is recorded above; main-build acceptance remains pending.
