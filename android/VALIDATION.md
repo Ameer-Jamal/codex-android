@@ -704,3 +704,28 @@ The normal main-build, exact-artifact emulator and OIDC/checksum gates remain
 mandatory. Candidate 2e11aa07a passed its wrapper/security/Android build and scoped
 native workflows (41523562946 and 41523562830). Earlier exact candidate emulator
 acceptance is recorded above; main-build acceptance remains pending.
+
+## Published upstream 0.166.0 release — November 3, 2026
+
+`codex-android@0.166.0-android.1` is verified as npm latest. The
+[exact main build](https://github.com/Ameer-Jamal/codex-android/actions/runs/41656553319)
+passed checks, dependency policy and native Android compilation for `3180d53bf585b8dd609a7a7e1357a8a9de0f0f44`.
+Its exact artifact passed clean Android 17/API 37 ARM64, 4 KB emulator acceptance
+with a clean matching harness before publication. The checksum-bound result is
+recorded under `emulator/pipeline-41656553319-api37/result.json` in external logs.
+No live model requests were made by the acceptance suite.
+
+[Direct OIDC publication](https://github.com/Ameer-Jamal/codex-android/actions/runs/41681652546)
+verified the registry package in the cloud and attached matching
+[GitHub prerelease assets](https://github.com/Ameer-Jamal/codex-android/releases/tag/v0.166.0-android.1). Public version/latest/README and
+package/checksum-file API digests were checked. Package SHA-256:
+`c9efd6dfe5e951278ec6638060641b61ba5b5f0ee5eb8f7e63f3785aeebb0646`. Registry SHA-1: `c9a518d13cef3d5bee44b772d61ba0abcbf2dc01`. The package has no npm install
+lifecycle hooks.
+
+The README and release notes disclose the unresolved crypto-bigint advisory
+under the maintainer's explicit November 3 residual-risk decision; it is not
+claimed fixed. Scoped native evidence is recorded above. Early access continues:
+physical-device acceptance of this version, Android/OEM lifecycle behavior,
+16 KB support and shared-daemon recovery remain unverified. Local package
+downloads were confined to authorized emulator testing; publication and registry
+mirroring stayed on GitHub.
