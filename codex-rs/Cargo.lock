@@ -2302,6 +2302,7 @@ dependencies = [
  "codex-config",
  "codex-core",
  "codex-http-client",
+ "codex-keyring-store",
  "codex-login",
  "codex-model-provider",
  "codex-protocol",
@@ -4320,6 +4321,7 @@ dependencies = [
  "base64 0.22.1",
  "chrono",
  "clap",
+ "codex-keyring-store",
  "codex-utils-absolute-path",
  "codex-utils-home-dir",
  "codex-utils-path-uri",
@@ -5167,6 +5169,7 @@ version = "0.166.0"
 dependencies = [
  "base64 0.22.1",
  "block2",
+ "codex-keyring-store",
  "core-foundation 0.10.1",
  "dirs",
  "objc2",

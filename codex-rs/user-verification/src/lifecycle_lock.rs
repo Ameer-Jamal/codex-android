@@ -53,7 +53,7 @@ impl LifecycleLock {
         let started = Instant::now();
         loop {
             guard.check()?;
-            match file.try_lock() {
+            match codex_keyring_store::file_lock::try_lock_exclusive(&file) {
                 Ok(()) => {
                     guard.check()?;
                     return Ok(Self { _file: file });

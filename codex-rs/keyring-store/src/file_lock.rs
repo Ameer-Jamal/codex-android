@@ -13,6 +13,22 @@ pub fn lock_exclusive(file: &File) -> io::Result<()> {
     file.lock()
 }
 
+/// Hold a shared lock until the file is closed.
+pub fn lock_shared(file: &File) -> io::Result<()> {
+    #[cfg(target_os = "android")]
+    return flock(file, libc::LOCK_SH);
+    #[cfg(not(target_os = "android"))]
+    file.lock_shared()
+}
+
+/// Release a lock held on this handle.
+pub fn unlock(file: &File) -> io::Result<()> {
+    #[cfg(target_os = "android")]
+    return flock(file, libc::LOCK_UN);
+    #[cfg(not(target_os = "android"))]
+    file.unlock()
+}
+
 /// Try to hold an exclusive lock until the file is closed.
 pub fn try_lock_exclusive(file: &File) -> Result<(), TryLockError> {
     #[cfg(target_os = "android")]

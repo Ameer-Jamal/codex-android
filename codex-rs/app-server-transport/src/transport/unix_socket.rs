@@ -141,7 +141,7 @@ pub async fn bind_private_daemon_socket(
         socket_guard.rendezvous_path.as_path(),
     )?;
     #[cfg(unix)]
-    socket_guard._startup_lock._file.unlock()?;
+    codex_keyring_store::file_lock::unlock(&socket_guard._startup_lock._file)?;
     Ok((listener, socket_guard))
 }
 
@@ -388,7 +388,7 @@ pub async fn acquire_app_server_startup_lock(
             .read(true)
             .write(true)
             .open(startup_lock_path.as_path())?;
-        if let Err(err) = file.lock()
+        if let Err(err) = codex_keyring_store::file_lock::lock_exclusive(&file)
             && !is_unsupported_file_lock_error(&err)
         {
             return Err(err);
@@ -440,7 +440,7 @@ impl AppServerStartupLock {
         let Some(path) = self.removable_path.as_ref() else {
             return Ok(());
         };
-        match self._file.try_lock() {
+        match codex_keyring_store::file_lock::try_lock_exclusive(&self._file) {
             Ok(()) => {}
             Err(std::fs::TryLockError::WouldBlock) => return Ok(()),
             Err(std::fs::TryLockError::Error(err)) => return Err(err),
@@ -462,7 +462,7 @@ pub(super) fn try_acquire_removable_app_server_startup_lock(
         .read(true)
         .write(true)
         .open(startup_lock_path.as_path())?;
-    file.try_lock()?;
+    codex_keyring_store::file_lock::try_lock_exclusive(&file)?;
     if !startup_lock_file_matches_path(&file, startup_lock_path.as_path())? {
         return Err(ErrorKind::WouldBlock.into());
     }

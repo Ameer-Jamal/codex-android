@@ -659,7 +659,7 @@ fn lock_managed_ca_certificate(certificate_path: &Path) -> Result<File> {
     let lock_path = managed_ca_certificate_lock_path(certificate_path)
         .ok_or_else(|| anyhow!("managed MITM CA certificate path is missing a file name"))?;
     let file = open_managed_ca_lock(&lock_path)?;
-    file.lock_shared()
+    codex_keyring_store::file_lock::lock_shared(&file)
         .with_context(|| format!("failed to lock {}", lock_path.display()))?;
     Ok(file)
 }
@@ -667,7 +667,7 @@ fn lock_managed_ca_certificate(certificate_path: &Path) -> Result<File> {
 fn lock_managed_ca_artifacts(proxy_dir: &Path) -> Result<File> {
     let lock_path = proxy_dir.join(MANAGED_MITM_CA_ARTIFACT_LOCK);
     let file = open_managed_ca_lock(&lock_path)?;
-    file.lock()
+    codex_keyring_store::file_lock::lock_exclusive(&file)
         .with_context(|| format!("failed to lock {}", lock_path.display()))?;
     Ok(file)
 }
