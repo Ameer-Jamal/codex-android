@@ -12,7 +12,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PATTERN = re.compile(
     r"\b(?:File::(?P<static>try_lock_shared|lock_shared|try_lock|unlock|lock)\b"
-    r"|(?P<receiver>(?:\w*_)?file(?:_\w+)?)\s*\.\s*"
+    r"|(?P<receiver>(?:\w*_)?file(?:_\w+)?|directory|coordination)\s*\.\s*"
     r"(?P<method>try_lock_shared|lock_shared|try_lock|unlock|lock)\s*\()"
 )
 # Reviewed pre-existing fallbacks or platform-specific test fixtures. Counts make
@@ -32,6 +32,7 @@ REVIEWED = {
     "core/src/installation_id.rs": {
         "lock": 1
     },  # Injected lock with Unsupported fallback.
+    "rollout/src/writer_lock_tests.rs": {"try_lock": 2},  # Host file-lock fixtures.
     "rollout/src/session_index_tests.rs": {"try_lock": 2, "unlock": 1},
     "windows-sandbox-rs/tests/support/src/lib.rs": {"lock": 1},
 }

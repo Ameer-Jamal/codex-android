@@ -769,3 +769,11 @@ contention and mention preferences. All evidence for the earlier dc2e1fd35 build
 applies only to that commit; this expanded candidate requires a new exact build,
 emulator acceptance and phone check. No expanded-candidate publication or
 physical-device acceptance is claimed here.
+
+A second pass over generic lock receivers (not only names containing `file`)
+also routes plugin marketplace staging, Git baseline coordination, local log
+directory leases, SQLite maintenance/NFS migration and remote-control daemon
+preferences through the same helper. Pattern scanning alone would miss generic
+`lock` receiver names; the manual inventory includes file-typed arguments,
+fallible blocking-lock calls and `std::fs::TryLockError` branches. This remains
+source review plus targeted tests, not a claim of exhaustive Android support.

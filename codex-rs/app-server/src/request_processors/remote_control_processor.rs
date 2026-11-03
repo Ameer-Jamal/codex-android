@@ -98,7 +98,7 @@ impl RemoteControlRequestProcessor {
                 .open(path.with_file_name("daemon.lock"))?;
             // The daemon may be waiting for this RPC during shutdown. Never wait
             // for it: a concurrent lifecycle operation wins over RPC persistence.
-            match lock.try_lock() {
+            match codex_keyring_store::file_lock::try_lock_exclusive(&lock) {
                 Ok(()) => {}
                 Err(TryLockError::WouldBlock) => return Ok(()),
                 Err(TryLockError::Error(err)) => return Err(err),

@@ -37,7 +37,7 @@ impl MarketplaceStagingDir {
         let staging_root = Self::staging_root(install_root);
         fs::create_dir_all(&staging_root)?;
         let coordination = open_lock(&install_root.join(COORDINATION_LOCK))?;
-        coordination.lock()?;
+        codex_keyring_store::file_lock::lock_exclusive(&coordination)?;
         let directory = tempfile::Builder::new()
             .prefix(&Self::directory_prefix())
             .tempdir_in(&staging_root)?;
@@ -46,7 +46,7 @@ impl MarketplaceStagingDir {
             .write(true)
             .create_new(true)
             .open(directory.path().join(OWNER_LOCK))?;
-        lock.lock()?;
+        codex_keyring_store::file_lock::lock_exclusive(&lock)?;
         let checkout = directory.path().join("checkout");
         Ok(Self {
             _lock: lock,
@@ -85,7 +85,7 @@ fn open_lock(path: &Path) -> io::Result<File> {
 }
 
 fn try_lock(lock: File) -> io::Result<Option<File>> {
-    match lock.try_lock() {
+    match codex_keyring_store::file_lock::try_lock_exclusive(&lock) {
         Ok(()) => Ok(Some(lock)),
         Err(fs::TryLockError::WouldBlock) => Ok(None),
         Err(fs::TryLockError::Error(err)) => Err(err),

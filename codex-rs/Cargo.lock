@@ -2096,6 +2096,7 @@ dependencies = [
  "codex-hooks",
  "codex-http-client",
  "codex-image-generation-extension",
+ "codex-keyring-store",
  "codex-login",
  "codex-mcp",
  "codex-mcp-extension",
@@ -3546,6 +3547,7 @@ name = "codex-file-system"
 version = "0.166.0"
 dependencies = [
  "bytes",
+ "codex-keyring-store",
  "codex-protocol",
  "codex-utils-absolute-path",
  "codex-utils-path-uri",
@@ -3586,6 +3588,7 @@ dependencies = [
  "anyhow",
  "chrono",
  "codex-file-system",
+ "codex-keyring-store",
  "codex-protocol",
  "codex-utils-absolute-path",
  "codex-utils-cargo-bin",
@@ -4887,6 +4890,7 @@ dependencies = [
  "codex-file-system",
  "codex-git-utils",
  "codex-history",
+ "codex-keyring-store",
  "codex-protocol",
  "codex-utils-absolute-path",
  "file-id",

@@ -129,7 +129,7 @@ async fn try_ownership(home: &Path) -> std::io::Result<Option<File>> {
         .await?
         .into_std()
         .await;
-    match lock.try_lock() {
+    match codex_keyring_store::file_lock::try_lock_exclusive(&lock) {
         Ok(()) => Ok(Some(lock)),
         Err(std::fs::TryLockError::WouldBlock) => Ok(None),
         Err(std::fs::TryLockError::Error(error)) => Err(error),

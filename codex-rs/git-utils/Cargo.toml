@@ -9,6 +9,7 @@ readme = "README.md"
 workspace = true
 
 [dependencies]
+codex-keyring-store = { workspace = true }
 codex-utils-process = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }

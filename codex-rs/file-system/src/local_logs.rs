@@ -57,7 +57,7 @@ impl LocalLogsDir {
                         use std::os::unix::fs::MetadataExt;
 
                         let directory = std::fs::File::open(&path)?;
-                        directory.try_lock_shared()?;
+                        codex_keyring_store::file_lock::try_lock_shared(&directory)?;
                         let locked = directory.metadata()?;
                         let current = std::fs::metadata(&path)?;
                         if !locked.is_dir()

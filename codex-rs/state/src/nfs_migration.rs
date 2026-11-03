@@ -122,7 +122,7 @@ impl NfsDbMigration {
             .create(true)
             .truncate(false)
             .open(sqlite_home.join(".codex-nfs-migration.lock"))?;
-        lock.try_lock()
+        codex_keyring_store::file_lock::try_lock_exclusive(&lock)
             .context("another database migration is running")?;
         Ok(Self { _lock: lock })
     }

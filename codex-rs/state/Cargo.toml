@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 
 [dependencies]
+codex-keyring-store = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
 codex-file-system = { workspace = true }

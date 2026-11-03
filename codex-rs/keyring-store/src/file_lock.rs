@@ -1,4 +1,4 @@
-//! Credential-store locks. Android supports flock, but Rust's File locking API
+//! Cross-process file locks. Android supports flock, but Rust's File locking API
 //! currently excludes Android and returns Unsupported without a system call.
 
 use std::fs::File;

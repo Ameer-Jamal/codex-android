@@ -143,7 +143,7 @@ async fn with_baseline_lock<T: Send + 'static>(
             .create(true)
             .truncate(false)
             .open(control.join("codex-baseline.lock"))?;
-        lock.lock().context("lock git baseline")?;
+        codex_keyring_store::file_lock::lock_exclusive(&lock).context("lock git baseline")?;
         operation(&root)
     })
     .await?
