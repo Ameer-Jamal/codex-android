@@ -487,7 +487,15 @@ impl Drop for LoginStatusGuard<'_> {
 // The legacy CLI/TUI flow hands browser authorization directly to the user.
 pub(super) fn open_browser(url: &Url) {
     eprintln!("Authorize the model provider by opening this URL:\n{url}\n");
-    if webbrowser::open(url.as_str()).is_err() {
+    #[cfg(target_os = "android")]
+    let browser_opened = std::process::Command::new("termux-open-url")
+        .arg(url.as_str())
+        .status()
+        .is_ok_and(|status| status.success());
+    #[cfg(not(target_os = "android"))]
+    let browser_opened = webbrowser::open(url.as_str()).is_ok();
+
+    if !browser_opened {
         eprintln!("Browser launch failed; open the URL above manually.");
     }
 }
