@@ -59,8 +59,11 @@ protections should be proposed upstream separately from Android compatibility.
   binary source. Changing their branding would break artifact resolution.
 - `core/src/tools/{sandboxing,orchestrator}.rs`: retained approval-aware Android
   compatibility, with its existing regression coverage and deny-read guard.
-- `arg0`, `message-history`, core installation ID, `rollout`, `execpolicy`, and
-  app-server transport: retained unsupported advisory-lock handling.
+- `arg0`, `message-history`, `rollout`, `execpolicy`, and app-server transport:
+  retained unsupported advisory-lock handling. Rollout thread-writer coordination
+  takes flock through `codex_keyring_store::file_lock` and keeps that fallback only
+  for filesystems that reject flock. The installation ID (moved upstream to
+  `runtime-agent-instance` in 0.170.0) always takes real shared/exclusive locks.
 - `state/src/sqlite.rs`: Android WAL fallback isolated in the common SQLite pool
   opener, with full synchronization for rollback journals; normal migrations and schema stay upstream. This also covers logs,
   memories, history, and queue pools rather than duplicating their migration logic.

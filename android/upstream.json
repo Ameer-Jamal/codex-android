@@ -1,6 +1,6 @@
 {
   "repository": "https://github.com/openai/codex",
-  "tag": "rust-v0.166.0",
-  "commit": "6ff1e1ca3b30fc8b914720681fcf5fe62e95f856",
+  "tag": "rust-v0.170.0",
+  "commit": "29eb79e9866b3262a777fdf8195c1b9e63684c91",
   "verification": "Fetched release tag from the official upstream Git remote; source is identified by the peeled Git commit."
 }
