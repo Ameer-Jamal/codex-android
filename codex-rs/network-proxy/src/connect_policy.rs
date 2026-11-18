@@ -9,7 +9,7 @@ use crate::runtime::HostBlockDecision;
 use crate::state::BlockedRequest;
 use crate::state::BlockedRequestArgs;
 use crate::state::NetworkProxyState;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "android"))]
 use crate::system_dns::SystemDnsResolver;
 use rama_core::Service;
 use rama_core::error::BoxError;
@@ -123,7 +123,7 @@ where
 
     async fn serve(&self, input: Input) -> Result<Self::Output, Self::Error> {
         let connector = TcpConnector::new();
-        #[cfg(target_os = "macos")]
+        #[cfg(any(target_os = "macos", target_os = "android"))]
         let connector = connector.with_dns(SystemDnsResolver);
 
         if input.extensions().get::<ProxyAddress>().is_some() {

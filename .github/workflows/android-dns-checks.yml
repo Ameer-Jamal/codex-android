@@ -1,0 +1,65 @@
+name: Android DNS dependency checks
+
+on:
+  pull_request:
+    paths:
+      - "third_party/rama-dns/**"
+      - "codex-rs/Cargo.toml"
+      - "codex-rs/Cargo.lock"
+      - ".github/workflows/android-dns-checks.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-dns-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dns-port:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      # Metadata/lockfile resolution only; no Codex native build in this job.
+      # The resulting lockfile must be reviewed and committed before exact-source CI.
+      - name: Resolve localized DNS override
+        working-directory: codex-rs
+        run: cargo update -p rama-dns --precise 0.3.0-alpha.4
+      - name: Verify versions and record lockfile provenance
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, subprocess, tomllib
+          from pathlib import Path
+          lock = Path('codex-rs/Cargo.lock')
+          packages = tomllib.loads(lock.read_text())['package']
+          for package in packages:
+              if package['name'] in ['hickory-proto', 'hickory-resolver']:
+                  assert package['version'] == '0.26.3', package
+          source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          metadata = {'source': source, 'lockfile_sha256': hashlib.sha256(lock.read_bytes()).hexdigest()}
+          Path('dns-lockfile.json').write_text(json.dumps(metadata, indent=2) + '\n')
+          PY
+      - name: Preserve resolved lockfile for coordinator review
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: android-dns-lockfile
+          path: |
+            codex-rs/Cargo.lock
+            dns-lockfile.json
+          if-no-files-found: error
+      - name: Test adapter without external DNS queries
+        working-directory: codex-rs
+        run: cargo test --locked -p rama-dns --lib hickory::tests
+      - name: Record Android runtime dependency path
+        working-directory: codex-rs
+        run: cargo tree --locked -p codex-cli --target aarch64-linux-android --edges normal,build -i hickory-proto@0.26.3

@@ -1,5 +1,5 @@
-//! This macOS-only module implements DNS resolution
-//! using macOS's native system resolver. We have to
+//! This macOS/Android module implements DNS resolution
+//! using the platform's native system resolver. We have to
 //! do this rather than relying on the default behavior
 //! (which reads /etc/resolv.conf) since default behavior
 //! breaks Codex's ability to interact with network paths
@@ -13,7 +13,7 @@ use std::net::Ipv4Addr;
 use std::net::Ipv6Addr;
 use tokio::net::lookup_host;
 
-/// Resolve TCP destinations through macOS's native resolver, including supplemental
+/// Resolve TCP destinations through the native resolver, including supplemental
 /// resolvers and VPN split DNS that are not represented in `/etc/resolv.conf`.
 #[derive(Clone)]
 pub(crate) struct SystemDnsResolver;

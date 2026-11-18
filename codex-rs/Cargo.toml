@@ -681,6 +681,8 @@ inherits = "test"
 opt-level = 0
 
 [patch.crates-io]
+# Localized Hickory security port; keep the pinned Rama public API and Rust 1.95.
+rama-dns = { path = "../third_party/rama-dns" }
 # Uncomment to debug local changes.
 # ratatui = { path = "../../ratatui" }
 crossterm = { git = "https://github.com/openai-oss-forks/crossterm", rev = "ed1cdab335221515706178d68495bba2aed1924f" }

@@ -781,7 +781,7 @@ source review plus targeted tests, not a claim of exhaustive Android support.
 ## Upstream 0.170.0 candidate — preparation only, November 18, 2026
 
 Prepared `0.170.0-android.1` from official stable `rust-v0.170.0` (peeled commit
-`29eb79e9866b3262a777fdf8195c1b9e63684c91`) merged into `main` at
+`29eb79e9866b3262a777fdf8195c1b9e63684c91`) merged onto a candidate branch from `main` at
 `cff5611a5bc78c3da4370b3e384994211bde7021`. Prior state: npm latest
 `0.166.0-android.2`; its exact Android 17 artifact passed emulator acceptance, while
 native run 41707968173 failed. Not every predecessor test passed.
@@ -821,3 +821,17 @@ the file-lock inventory, TUI/core boundary and workspace manifest checks passed;
 native tests, the Android build, emulator acceptance and phone sign-in were not run
 locally and remain pending. No live model requests, publication or remote mutation
 occurred.
+
+Coordinator follow-up: the official stable tag/peeled commit was independently
+verified, and registry metadata returned 404 for the unused candidate version.
+32 launcher tests passed (1 skipped), all 45 Android Python tests passed, the
+file-lock/workspace/boundary checks and shell syntax passed. `cargo metadata
+--locked --no-deps` passed before the DNS override. The reviewed browser-launch
+fix and 35 version literals in 32 snapshots were committed as db71f17fef, and
+`just fmt` passed for that step.
+
+The coordinator then implemented a localized Rama/Hickory adapter prototype and
+Android system-resolver routing after worker file-access restrictions prevented
+completion. Adapter tests are written but have not run; Cargo.lock regeneration,
+cloud compilation/security, emulator and physical-phone acceptance remain pending.
+No new advisory exception, main merge or publication is claimed.

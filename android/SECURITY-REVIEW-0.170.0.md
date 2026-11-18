@@ -5,9 +5,7 @@ lockfile analysis, not an exploitability certification or acceptance of residual
 The [0.166.0 review](SECURITY-REVIEW-0.166.0.md) and its maintainer decision do not
 authorize this release.
 
-The advisory database was not reachable from the preparation host, so this review
-does not claim that the list below is complete. The cloud `cargo deny` and Android
-security jobs are authoritative; their results for the exact candidate are pending.
+The first worker could not reach the advisory database. The coordinator fetched primary RustSec advisory files for 0487, 0514 and 0441 and verified the fixed Hickory version (>=0.26.2) and pin-utils maintenance notice. The list is not claimed complete. Exact-source cloud dependency policy remains pending.
 
 ## Kept fixed instead of excepted
 
@@ -68,3 +66,25 @@ Both now use `codex_keyring_store::file_lock` (flock on Android), keeping upstre
 deadlines, `WouldBlock` handling and genuine-error propagation. The relocated
 installation ID file (`runtime-agent-instance`) now uses real shared/exclusive
 locking instead of the previous unlocked fallback.
+
+## Coordinator remediation prototype
+
+A source-provenanced `third_party/rama-dns` path override ports the existing
+0.3.0-alpha.4 adapter to exact Hickory resolver 0.26.3 without changing Rust 1.95
+or the pinned Rama family. Package bytes were checksum-verified before extraction;
+both license texts and source attribution are retained. The new generic Lookup
+API is filtered to the requested answer-record type; tests cover mixed address
+families, CNAME filtering and binary TXT chunks without live DNS. System-constructor
+errors propagate; the compatibility builder gains a fallible `try_build` method.
+
+Android's connector uses the existing native SystemDnsResolver, with the same
+post-resolution address/network-policy checks. This is source review, not proven
+Private DNS/VPN behavior on a device. The default resolver constructors remain
+available for other platforms and explicit callers.
+
+The old Hickory versions still exist in the pre-regeneration Cargo.lock. A
+read-only cloud workflow resolves the localized override and exports the lockfile
+with source SHA and checksum for coordinator review. It tests the adapter and
+prints the Android dependency path. This job is not release-build acceptance;
+commit the reviewed lockfile and rerun exact-source security/native checks first.
+No advisory ignore was added. pin-utils and crypto-bigint decisions remain open.

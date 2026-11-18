@@ -30,7 +30,7 @@ mod secret_substitution;
 mod socket_path;
 mod socks5;
 mod state;
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "android"))]
 mod system_dns;
 mod tcp_upstream;
 mod upstream;
