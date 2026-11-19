@@ -835,3 +835,13 @@ Android system-resolver routing after worker file-access restrictions prevented
 completion. Adapter tests are written but have not run; Cargo.lock regeneration,
 cloud compilation/security, emulator and physical-phone acceptance remain pending.
 No new advisory exception, main merge or publication is claimed.
+
+### Candidate security decision and release gates — 2026-11-18
+
+The maintainer approved the chrono and pin-utils maintenance exceptions and
+accepted the documented crypto-bigint 0.5.5 timing side-channel risk for
+`0.170.0-android.1`. See the [security review](SECURITY-REVIEW-0.170.0.md) for
+the affected dependency paths and removal conditions. DNS tests passed in
+GitHub run 44467476154. The previous Android build stopped at the two maintenance
+notices in run 44467476235. Android build, emulator and physical-phone fresh
+sign-in acceptance remain release gates.

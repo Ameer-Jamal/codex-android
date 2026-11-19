@@ -21,7 +21,7 @@ The candidate keeps the existing Android dependency upgrades and does not import
 Tokio 1.53.3, tar 0.4.46, webrtc 0.21 and the `serde_norway` replacement for
 `serde_yaml` are also retained from the existing Android lockfile.
 
-## New upstream exceptions not imported: decision required
+## Upstream exceptions reviewed before the Android build
 
 Upstream 0.170.0 ignores the following advisories. They were not added to
 `deny.toml` or `.cargo/audit.toml`. If they still match the dependency graph,
@@ -55,7 +55,8 @@ cargo tree --locked -p codex-cli --target aarch64-linux-android \
 crypto-bigint 0.5.5 (RUSTSEC-2026-0387) remains via elliptic-curve 0.13.8, reaching
 codex-aws-auth, codex-secrets, codex-user-verification and codex-voice-host in the
 lockfile graph. The existing exception entry is unchanged. The November 3 decision
-accepted this risk for 0.166.0 only; this candidate needs a new explicit decision.
+covered 0.166.0. On November 18 the maintainer approved carrying the documented
+risk forward specifically for the 0.170.0-android.1 early-access release.
 
 ## Android lock and source protections
 
@@ -87,4 +88,17 @@ read-only cloud workflow resolves the localized override and exports the lockfil
 with source SHA and checksum for coordinator review. It tests the adapter and
 prints the Android dependency path. This job is not release-build acceptance;
 commit the reviewed lockfile and rerun exact-source security/native checks first.
-No advisory ignore was added. pin-utils and crypto-bigint decisions remain open.
+
+## Candidate audit and maintainer decision
+
+GitHub run 44467476235 on `b49e7f56a7` cleared the dependency bans, licenses and
+sources checks. Its advisory check failed only on the unmaintained notices for
+chrono 0.4.43 (RUSTSEC-2026-0543) and pin-utils 0.1.0 (RUSTSEC-2026-0441). Both
+versions are present in the previous release. Neither advisory lists a patched
+release. On November 18 the maintainer approved exceptions for these two advisory
+IDs for 0.170.0-android.1. Remove them when upstream and its dependencies migrate.
+
+Run 44467476154 passed all three focused DNS adapter tests with the reviewed
+cloud lockfile. It selects Hickory 0.26.3, zip 9.1.2, libz-sys 1.1.33,
+quinn-proto 0.11.19 and quinn-udp 0.5.16 and 0.6.3. The exact package still needs
+a successful build, emulator acceptance and fresh sign-in on the physical phone.
