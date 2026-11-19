@@ -26,12 +26,6 @@ REVIEWED = {
     "message-history/src/batch.rs": {
         "try_lock_shared": 1
     },  # History fallback retained.
-    "rollout/src/writer_lock.rs": {
-        "try_lock": 4
-    },  # Existing Android ownership fallback.
-    "core/src/installation_id.rs": {
-        "lock": 1
-    },  # Injected lock with Unsupported fallback.
     "rollout/src/writer_lock_tests.rs": {"try_lock": 2},  # Host file-lock fixtures.
     "rollout/src/session_index_tests.rs": {"try_lock": 2, "unlock": 1},
     "windows-sandbox-rs/tests/support/src/lib.rs": {"lock": 1},

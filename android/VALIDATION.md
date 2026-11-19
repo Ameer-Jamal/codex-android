@@ -777,3 +777,71 @@ preferences through the same helper. Pattern scanning alone would miss generic
 `lock` receiver names; the manual inventory includes file-typed arguments,
 fallible blocking-lock calls and `std::fs::TryLockError` branches. This remains
 source review plus targeted tests, not a claim of exhaustive Android support.
+
+## Upstream 0.170.0 candidate — preparation only, November 18, 2026
+
+Prepared `0.170.0-android.1` from official stable `rust-v0.170.0` (peeled commit
+`29eb79e9866b3262a777fdf8195c1b9e63684c91`) merged onto a candidate branch from `main` at
+`cff5611a5bc78c3da4370b3e384994211bde7021`. Prior state: npm latest
+`0.166.0-android.2`; its exact Android 17 artifact passed emulator acceptance, while
+native run 41707968173 failed. Not every predecessor test passed.
+
+The preparation host could not reach GitHub or the npm registry. The tag's peeled
+commit was verified from the local upstream tag only. Whether
+`0.170.0-android.1` is unused on npm was **not** verified; check registry metadata
+before building a publishable candidate.
+
+Merge conflicts: seven upstream publication/issue workflows remain removed; the
+workspace version is 0.170.0; app-server keeps the Android lock helper alongside
+upstream's new dependency; model-message size limits are kept beside upstream's
+catalog types; persistent-instruction validation uses upstream's new root
+capability check; the lockfile takes upstream Windows-only selections and keeps the
+Android dependency upgrades. Upstream moved the installation ID into
+`runtime-agent-instance`; it now takes real flock-backed shared/exclusive locks.
+
+The Android OS API review found two new upstream lock paths that fail on Android:
+credential commits (save, compare-and-save, logout) in
+`login/src/auth/storage_commit.rs`, and the revised thread-writer coordination in
+`rollout/src/writer_lock.rs`, which would have stopped threads from opening. Both
+now use `codex_keyring_store::file_lock`. No new upstream Unix-socket, ZIP or
+direct SQLite pool openers were found. New sqlx git sources and the rusty_v8 source
+switch (still V8 152.2.0) need cloud build and code-mode verification. Upstream's
+new gateway sign-in opens the browser through `webbrowser`, not `termux-open-url`;
+no Android browser interaction is claimed.
+
+New upstream advisory exceptions were not imported; see the
+[0.170.0 security review](SECURITY-REVIEW-0.170.0.md). Dependency policy is expected
+to block the Android build until the maintainer decides them, and crypto-bigint
+needs a new decision for this release.
+
+Local checks: Node launcher tests passed (32 passed, 1 skipped); Android Python
+tests ran 45 with one error from the local sandbox refusing a loopback port bind;
+the file-lock inventory, TUI/core boundary and workspace manifest checks passed;
+`bash -n` passed. Rust formatting, Markdown Prettier formatting, Rust compilation,
+native tests, the Android build, emulator acceptance and phone sign-in were not run
+locally and remain pending. No live model requests, publication or remote mutation
+occurred.
+
+Coordinator follow-up: the official stable tag/peeled commit was independently
+verified, and registry metadata returned 404 for the unused candidate version.
+32 launcher tests passed (1 skipped), all 45 Android Python tests passed, the
+file-lock/workspace/boundary checks and shell syntax passed. `cargo metadata
+--locked --no-deps` passed before the DNS override. The reviewed browser-launch
+fix and 35 version literals in 32 snapshots were committed as db71f17fef, and
+`just fmt` passed for that step.
+
+The coordinator then implemented a localized Rama/Hickory adapter prototype and
+Android system-resolver routing after worker file-access restrictions prevented
+completion. Adapter tests are written but have not run; Cargo.lock regeneration,
+cloud compilation/security, emulator and physical-phone acceptance remain pending.
+No new advisory exception, main merge or publication is claimed.
+
+### Candidate security decision and release gates — 2026-11-18
+
+The maintainer approved the chrono and pin-utils maintenance exceptions and
+accepted the documented crypto-bigint 0.5.5 timing side-channel risk for
+`0.170.0-android.1`. See the [security review](SECURITY-REVIEW-0.170.0.md) for
+the affected dependency paths and removal conditions. DNS tests passed in
+GitHub run 44467476154. The previous Android build stopped at the two maintenance
+notices in run 44467476235. Android build, emulator and physical-phone fresh
+sign-in acceptance remain release gates.

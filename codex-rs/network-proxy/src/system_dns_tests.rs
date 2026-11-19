@@ -13,6 +13,7 @@ use rama_tcp::client::Request;
 use std::sync::Arc;
 use tokio::net::TcpListener;
 
+#[cfg(target_os = "macos")]
 #[tokio::test]
 async fn native_resolution_supports_both_address_families() {
     let domain: Domain = "localhost".parse().expect("valid domain");
@@ -31,6 +32,7 @@ async fn native_resolution_supports_both_address_families() {
     );
 }
 
+#[cfg(target_os = "macos")]
 #[tokio::test]
 async fn connector_reaches_native_hostname_over_ipv4_and_ipv6() {
     for ip in [
@@ -92,4 +94,22 @@ async fn connector_resolves_upstream_proxy_instead_of_destination() {
     let connection = connector.serve(request).await.expect("connect to proxy");
 
     assert_eq!(connection.conn.peer_addr().expect("peer addr"), target);
+}
+
+#[tokio::test]
+async fn native_ipv4_resolution_finds_localhost() {
+    let addresses = SystemDnsResolver
+        .ipv4_lookup("localhost".parse().unwrap())
+        .await
+        .unwrap();
+    assert_eq!(addresses, vec![Ipv4Addr::LOCALHOST]);
+}
+
+#[tokio::test]
+async fn native_resolution_rejects_txt_without_a_dns_fallback() {
+    let error = SystemDnsResolver
+        .txt_lookup("localhost".parse().unwrap())
+        .await
+        .unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::Unsupported);
 }

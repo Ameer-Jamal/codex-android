@@ -24,5 +24,7 @@ ignore = [
     # Reviewed 2026-10-20.
     "RUSTSEC-2026-0374", # basic-toml 0.1.10 via i18n-config/i18n-embed-fl under age 0.12.1 in codex-secrets; no patched release; remove when age's localization dependencies migrate off basic-toml
     "RUSTSEC-2026-0387", # crypto-bigint 0.5.5 via elliptic-curve 0.13.8 is used by age, AWS login, user verification, and WebRTC; timing leakage can affect private-key or session-secret operations; remove when these dependency paths use crypto-bigint >=0.7.6
-    # Reviewed 2026-10-26.
+    # Reviewed for 0.170.0-android.1 on 2026-11-18; see deny.toml.
+    "RUSTSEC-2026-0543", # chrono maintenance notice
+    "RUSTSEC-2026-0441", # pin-utils maintenance notice
 ]

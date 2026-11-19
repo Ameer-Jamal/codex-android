@@ -1,0 +1,159 @@
+name: Android DNS dependency checks
+
+on:
+  pull_request:
+    paths:
+      - "third_party/rama-dns/**"
+      - "codex-rs/Cargo.toml"
+      - "codex-rs/Cargo.lock"
+      - ".github/workflows/android-dns-checks.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-dns-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dns-port:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CARGO_NET_GIT_FETCH_WITH_CLI: "true"
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
+      CARGO_PROFILE_TEST_DEBUG: "0"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@e081816240890017053eacbb1bdf337761dc5582 # 1.95.0
+      # Metadata/lockfile resolution only; no Codex native build in this job.
+      # The resulting lockfile must be reviewed and committed before exact-source CI.
+      - name: Resolve DNS override and targeted advisory fixes
+        working-directory: codex-rs
+        run: |
+          python3 - <<'PY'
+          import re
+          import subprocess
+          import tomllib
+          from pathlib import Path
+
+          fixes = {
+              ("zip", "9."): "9.0.5",           # RUSTSEC-2026-0548
+              ("libz-sys", "1."): "1.1.33",     # RUSTSEC-2026-0544
+              ("quinn-proto", "0.11."): "0.11.19",  # RUSTSEC-2026-0523 / 0524
+              ("quinn-udp", "0.5."): "0.5.16",  # RUSTSEC-2026-0538
+              ("quinn-udp", "0.6."): "0.6.3",   # RUSTSEC-2026-0538
+          }
+
+          def version(value):
+              if not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", value):
+                  raise SystemExit(f"Unexpected dependency version: {value}")
+              return tuple(map(int, value.split(".")))
+
+          def pending():
+              packages = tomllib.loads(Path("Cargo.lock").read_text())["package"]
+              return [
+                  (name, package["version"], fixed)
+                  for (name, branch), fixed in fixes.items()
+                  for package in packages
+                  if package["name"] == name
+                  and package["version"].startswith(branch)
+                  and version(package["version"]) < version(fixed)
+              ]
+
+          attempted = set()
+          while updates := pending():
+              name, current, fixed = update = updates[0]
+              if update in attempted:
+                  raise SystemExit(f"Cargo left {name}@{current} below {fixed}")
+              attempted.add(update)
+              subprocess.run(
+                  ["cargo", "update", "-p", f"{name}@{current}", "--precise", fixed],
+                  check=True,
+              )
+
+          subprocess.run(
+              ["cargo", "update", "-p", "rama-dns", "--precise", "0.3.0-alpha.4"],
+              check=True,
+          )
+          if updates := pending():
+              raise SystemExit(f"DNS resolution reintroduced affected versions: {updates}")
+          PY
+      - name: Verify versions and record lockfile provenance
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, subprocess, tomllib
+          from pathlib import Path
+          lock = Path('codex-rs/Cargo.lock')
+          packages = tomllib.loads(lock.read_text())['package']
+          for package in packages:
+              if package['name'] in ['hickory-proto', 'hickory-resolver']:
+                  assert package['version'] == '0.26.3', package
+          source = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          metadata = {'source': source, 'lockfile_sha256': hashlib.sha256(lock.read_bytes()).hexdigest()}
+          Path('dns-lockfile.json').write_text(json.dumps(metadata, indent=2) + '\n')
+          PY
+      - name: Preserve resolved lockfile for coordinator review
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7
+        with:
+          name: android-dns-lockfile
+          path: |
+            codex-rs/Cargo.lock
+            dns-lockfile.json
+          if-no-files-found: error
+      # Standalone unit proof for the patched adapter.
+      #
+      # third_party/rama-dns is a [patch.crates-io] override, not a workspace
+      # member, so Cargo cannot test its library through the root workspace when it
+      # requires dev-dependencies. Test the patched source independently;
+      # production compilation still uses the root workspace lockfile.
+      #
+      # Instead, copy the crate into an isolated directory and test it as its
+      # own workspace with a dedicated test lockfile. That lock is scoped to
+      # this adapter crate only: it is resolved from crates.io at the exact
+      # pinned versions and is NOT the codex-rs/Cargo.lock workspace lock, so
+      # it proves the patched source compiles and its focused unit tests pass
+      # in isolation. It does NOT prove that codex-rs builds against the
+      # patched crate; the exact-source workspace build remains a separate
+      # gate.
+      - name: Test adapter without external DNS queries (standalone)
+        run: |
+          set -euo pipefail
+          stage="$(mktemp -d)"
+          trap 'rm -rf "$stage"' EXIT
+          cp -R third_party/rama-dns "$stage/rama-dns"
+          cd "$stage/rama-dns"
+          # Dedicated test lock for this crate only; never the workspace lock.
+          cargo generate-lockfile
+          # Keep the exact Rama and Hickory pins in the standalone test lock.
+          python3 - <<'PY'
+          import tomllib
+          from pathlib import Path
+          packages = tomllib.loads(Path('Cargo.lock').read_text())['package']
+          versions = {}
+          for package in packages:
+              versions.setdefault(package['name'], set()).add(package['version'])
+          for name, expected in [
+              ('rama-core', '0.3.0-alpha.4'),
+              ('rama-net', '0.3.0-alpha.4'),
+              ('rama-utils', '0.3.0-alpha.4'),
+              ('hickory-resolver', '0.26.3'),
+              ('hickory-proto', '0.26.3'),
+          ]:
+              found = versions.get(name, set())
+              assert found == {expected}, f'{name}: expected {expected}, got {sorted(found)}'
+          print('standalone test lock pins verified')
+          PY
+          # A filter that matches nothing still exits 0, so require the focused
+          # Hickory tests to actually be present and to run.
+          cargo test --locked --lib -- --list > listed.txt
+          grep -q 'hickory::tests::' listed.txt
+          cargo test --locked --lib hickory::tests -- --nocapture 2>&1 | tee test-output.txt
+          grep -Eq '^test result: ok\. [1-9][0-9]* passed;' test-output.txt
+      - name: Record Android runtime dependency path
+        working-directory: codex-rs
+        run: cargo tree --locked -p codex-cli --target aarch64-linux-android --edges normal,build -i hickory-proto@0.26.3
