@@ -3415,7 +3415,7 @@ async fn guardian_oversized_node_repl_policy_fails_closed_without_model_or_tool_
                 Some(serde_json::from_value(messages.take()).expect("guardian policy fixture"));
         },
     );
-    let parent_model = turn.model_info().as_ref().clone();
+    let parent_model = turn.model_info().model.as_ref().clone();
     let auth_manager = Arc::clone(&session.services.auth_manager);
     Arc::get_mut(&mut session)
         .expect("session should be unique")
