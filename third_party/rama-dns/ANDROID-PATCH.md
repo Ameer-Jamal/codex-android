@@ -19,5 +19,22 @@ existing public-resolver defaults. Post-resolution address policy is preserved.
 This is a source prototype until the regenerated lockfile, cloud tests, Android
 build and exact-artifact acceptance pass. No vulnerability exception is added.
 
+## Test lock scope
+
+This crate is a `[patch.crates-io]` override and is not a workspace member, so
+Cargo refuses to test its library through `codex-rs` when it requires
+dev-dependencies. The root dependency override still selects the patched
+source for production compilation. The focused Hickory tests are therefore run standalone:
+the crate is copied to an isolated directory and built as its own workspace
+with a dedicated test lockfile resolved at the exact pinned versions
+(`rama-core`/`rama-net`/`rama-utils` `0.3.0-alpha.4`, `hickory-resolver` and
+`hickory-proto` `0.26.3`).
+
+That test lockfile is scoped to this adapter crate alone. It is not
+`codex-rs/Cargo.lock`, it is not committed, and it is not evidence that
+`codex-rs` builds against the patched crate; the exact-source workspace build
+and the root `--locked` production and Android native dependency gates remain
+separate checks.
+
 Remove this override when a compatible upstream Rama version includes patched
 Hickory. Upgrade the whole Rama stack/toolchain deliberately, not implicitly.
